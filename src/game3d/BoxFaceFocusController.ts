@@ -1,23 +1,25 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
 
-import type { BoxFaceName } from "./BoxFace";
+import type { FocusTarget } from "./BoxFace";
 import { BoxRotationController } from "./BoxRotationController";
 
 type BoxFaceFocusControllerOptions = {
   canvas: HTMLCanvasElement;
   camera: THREE.PerspectiveCamera;
   boxRoot: THREE.Group;
-  focusMeshes: Map<BoxFaceName, THREE.Mesh>;
+  focusMeshes: Map<FocusTarget, THREE.Mesh>;
   rotationController: BoxRotationController;
   // Camera distance for the overview (null) or a focused face.
   // Depends on the screen shape, so it is asked for each time.
-  getCameraZ: (face: BoxFaceName | null) => number;
-  onFocusChange?: (face: BoxFaceName | null) => void;
+  getCameraZ: (face: FocusTarget | null) => number;
+  // Vertical shift of the box, e.g. to keep the open lid in frame.
+  getBoxY: (face: FocusTarget | null) => number;
+  onFocusChange?: (face: FocusTarget | null) => void;
 };
 
 const FACE_ROTATIONS: Record<
-  BoxFaceName,
+  FocusTarget,
   THREE.Euler
 > = {
   front: new THREE.Euler(0, 0, 0),
@@ -26,20 +28,27 @@ const FACE_ROTATIONS: Record<
   left: new THREE.Euler(0, Math.PI / 2, 0),
   top: new THREE.Euler(Math.PI / 2, 0, 0),
   bottom: new THREE.Euler(-Math.PI / 2, 0, 0),
+  // Top tilted 60° toward the camera: looking down into the open box.
+  inside: new THREE.Euler(Math.PI / 3, 0, 0),
 };
+
+// Leaving the inside view: turn the open box so the top and lid read well.
+const OPEN_OVERVIEW_ROTATION = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(0.42, 0.55, 0),
+);
 
 export class BoxFaceFocusController {
   private canvas: HTMLCanvasElement;
   private camera: THREE.PerspectiveCamera;
   private boxRoot: THREE.Group;
-  private focusMeshes: Map<BoxFaceName, THREE.Mesh>;
+  private focusMeshes: Map<FocusTarget, THREE.Mesh>;
   private rotationController: BoxRotationController;
 
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
 
-  private hoveredFace: BoxFaceName | null = null;
-  private focusedFace: BoxFaceName | null = null;
+  private hoveredFace: FocusTarget | null = null;
+  private focusedFace: FocusTarget | null = null;
 
   private pointerDownX = 0;
   private pointerDownY = 0;
@@ -47,8 +56,9 @@ export class BoxFaceFocusController {
   private pointerDownType = "mouse";
 
   private focusing = false;
-  private onFocusChange?: (face: BoxFaceName | null) => void;
-  private getCameraZ: (face: BoxFaceName | null) => number;
+  private onFocusChange?: (face: FocusTarget | null) => void;
+  private getCameraZ: (face: FocusTarget | null) => number;
+  private getBoxY: (face: FocusTarget | null) => number;
 
   constructor(options: BoxFaceFocusControllerOptions) {
     this.canvas = options.canvas;
@@ -58,6 +68,7 @@ export class BoxFaceFocusController {
     this.rotationController = options.rotationController;
     this.onFocusChange = options.onFocusChange;
     this.getCameraZ = options.getCameraZ;
+    this.getBoxY = options.getBoxY;
 
     this.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.canvas.addEventListener("pointerdown", this.handlePointerDown);
@@ -142,7 +153,7 @@ export class BoxFaceFocusController {
   private pickFace(
     clientX: number,
     clientY: number,
-  ): BoxFaceName | null {
+  ): FocusTarget | null {
     const rect =
       this.canvas.getBoundingClientRect();
 
@@ -177,7 +188,7 @@ export class BoxFaceFocusController {
     );
   }
 
-  private setHoveredFace(face: BoxFaceName | null) {
+  private setHoveredFace(face: FocusTarget | null) {
     if (face === this.hoveredFace) return;
 
     if (this.hoveredFace) {
@@ -216,7 +227,7 @@ export class BoxFaceFocusController {
   }
 
   private setFaceHighlight(
-    face: BoxFaceName,
+    face: FocusTarget,
     highlighted: boolean,
   ) {
     const mesh = this.focusMeshes.get(face);
@@ -236,12 +247,18 @@ export class BoxFaceFocusController {
       highlighted ? 0.34 : 0;
   }
 
-  public focus(face: BoxFaceName) {
-    if (this.focusedFace || this.focusing) return;
+  // Also switches directly from one focused target to another.
+  public focus(face: FocusTarget) {
+    if (this.focusing || this.focusedFace === face) return;
 
     const mesh = this.focusMeshes.get(face);
 
     if (!mesh) return;
+
+    if (this.focusedFace) {
+      this.setFaceHighlight(this.focusedFace, false);
+      this.focusedFace = null;
+    }
 
     this.focusing = true;
     this.clearHover();
@@ -292,6 +309,12 @@ export class BoxFaceFocusController {
       duration: 0.58,
       ease: "power3.inOut",
     });
+
+    gsap.to(this.boxRoot.position, {
+      y: this.getBoxY(face),
+      duration: 0.58,
+      ease: "power3.inOut",
+    });
   }
 
   public exitFocus() {
@@ -316,6 +339,25 @@ export class BoxFaceFocusController {
       },
     });
 
+    gsap.to(this.boxRoot.position, {
+      y: this.getBoxY(null),
+      duration: 0.38,
+      ease: "power2.inOut",
+    });
+
+    if (previousFace === "inside") {
+      const start = this.boxRoot.quaternion.clone();
+      const state = { t: 0 };
+      gsap.to(state, {
+        t: 1,
+        duration: 0.5,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          this.boxRoot.quaternion.slerpQuaternions(start, OPEN_OVERVIEW_ROTATION, state.t);
+        },
+      });
+    }
+
     this.onFocusChange?.(null);
   }
 
@@ -331,6 +373,9 @@ export class BoxFaceFocusController {
       this.getCameraZ(
         this.focusedFace,
       );
+
+    this.boxRoot.position.y =
+      this.getBoxY(this.focusedFace);
 
     if (!this.focusedFace) {
       this.rotationController.setEnabled(true);

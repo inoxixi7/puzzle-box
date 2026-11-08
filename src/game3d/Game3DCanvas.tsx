@@ -9,7 +9,7 @@ import {
 } from "./PuzzleBox3D";
 
 import type {
-  BoxFaceName,
+  FocusTarget,
 } from "./BoxFace";
 
 import {
@@ -21,9 +21,10 @@ import {
 } from "../store/useGameStore";
 
 const FACE_NAMES: Record<
-  BoxFaceName,
+  FocusTarget,
   string
 > = {
+  inside: "箱の中",
   front: "正面",
   right: "右側",
   back: "背面",
@@ -54,7 +55,7 @@ export function Game3DCanvas() {
     focusedFace,
     setFocusedFace,
   ] = useState<
-    BoxFaceName | null
+    FocusTarget | null
   >(null);
 
   const selectedItem =

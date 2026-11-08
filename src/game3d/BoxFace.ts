@@ -11,6 +11,9 @@ export const BOX_FACE_NAMES = [
 
 export type BoxFaceName = (typeof BOX_FACE_NAMES)[number];
 
+// "inside" is the view into the box once the lid is open.
+export type FocusTarget = BoxFaceName | "inside";
+
 export type BoxDimensions = {
   width: number;
   height: number;

@@ -6,6 +6,7 @@ import {
   createFaceAnchors,
   type BoxDimensions,
   type BoxFaceName,
+  type FocusTarget,
 } from "./BoxFace";
 
 import {
@@ -15,6 +16,7 @@ import {
 
 import { BoxRotationController } from "./BoxRotationController";
 import { BoxFaceFocusController } from "./BoxFaceFocusController";
+import { BoxLid } from "./BoxLid";
 import { FrontPuzzleOne } from "./puzzles/FrontPuzzleOne";
 import { LeftPuzzleFour } from "./puzzles/LeftPuzzleFour";
 import { TopPuzzleTwo } from "./puzzles/TopPuzzleTwo";
@@ -48,6 +50,18 @@ const FOCUS_FIT_MARGIN = 1.06;
 // to cover a few frames.
 const INPUT_RENDER_MS = 250;
 
+// Shell thickness of the now hollow box.
+const WALL = 0.35;
+const LID_THICKNESS = 0.3;
+// False floor inside, above the front drawer.
+const FALSE_FLOOR_Y = -0.55;
+
+// shortcut: `?lid` unlocks the lid from the start, until the top-face lock
+// (redesign phase 2) unlocks it for real.
+const DEBUG_LID =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("lid");
+
 type ScreenInsets = {
   top: number;
   right: number;
@@ -57,7 +71,7 @@ type ScreenInsets = {
 
 type PuzzleBox3DOptions = {
   onFocusChange?: (
-    face: BoxFaceName | null,
+    face: FocusTarget | null,
   ) => void;
 
   onPuzzleOneSolved?: () => void;
@@ -109,7 +123,13 @@ export class PuzzleBox3D {
 
 
   private focusMeshes =
-    new Map<BoxFaceName, THREE.Mesh>();
+    new Map<FocusTarget, THREE.Mesh>();
+
+  private lidPivot = new THREE.Group();
+  private lidTrims: THREE.Mesh[] = [];
+  private insideLight = new THREE.PointLight(0xffc98a, 0, 7, 2);
+  private insidePickMesh: THREE.Mesh;
+  private lid: BoxLid;
 
   private resizeObserver: ResizeObserver;
   private animationFrame = 0;
@@ -339,6 +359,21 @@ export class PuzzleBox3D {
           options.onFinalSolved,
       });
 
+    this.lid = new BoxLid({
+      pivot: this.lidPivot,
+      light: this.insideLight,
+      canvas: this.renderer.domElement,
+      onOpened: () => {
+        // The top face now hangs open behind the box; the opening replaces it.
+        this.focusMeshes.delete("top");
+        this.boxRoot.add(this.insidePickMesh);
+        this.focusMeshes.set("inside", this.insidePickMesh);
+        this.focusController.focus("inside");
+      },
+    });
+
+    if (DEBUG_LID) this.lid.unlock();
+
     this.focusController =
       new BoxFaceFocusController({
         canvas:
@@ -352,13 +387,25 @@ export class PuzzleBox3D {
 
         getCameraZ: (face) =>
           this.getCameraZ(face),
+        // The open lid stands up behind the box; lower the box to keep both in frame.
+        getBoxY: (face) =>
+          face === "inside"
+            ? -1.7
+            : !face && this.lid.isOpen
+              ? -1.2
+              : 0,
 
         onFocusChange: (face) => {
           this.puzzleOne.setEnabled(
             face === "front",
           );
 
+          // While the lid can be lifted, dragging on top moves the lid.
           this.puzzleTwo.setEnabled(
+            face === "top" &&
+              !this.lid.isUnlocked,
+          );
+          this.lid.setEnabled(
             face === "top",
           );
 
@@ -550,20 +597,67 @@ export class PuzzleBox3D {
       depth,
     } = this.dimensions;
 
-    const body =
-      new THREE.Mesh(
-        new THREE.BoxGeometry(
-          width,
-          height,
-          depth,
-        ),
-        this.materials.wood,
+    const wallHeight =
+      height - WALL - LID_THICKNESS;
+    const wallY =
+      (WALL - LID_THICKNESS) / 2;
+
+    const addSlab = (
+      parent: THREE.Object3D,
+      material: THREE.Material,
+      size: [number, number, number],
+      position: [number, number, number],
+    ) => {
+      const slab = new THREE.Mesh(
+        new THREE.BoxGeometry(...size),
+        material,
       );
+      slab.position.set(...position);
+      slab.castShadow = true;
+      slab.receiveShadow = true;
+      parent.add(slab);
+    };
 
-    body.castShadow = true;
-    body.receiveShadow = true;
+    const wood = this.materials.wood;
 
-    this.boxRoot.add(body);
+    addSlab(this.boxRoot, wood, [width, WALL, depth], [0, -height / 2 + WALL / 2, 0]);
+
+    for (const z of [-1, 1]) {
+      addSlab(this.boxRoot, wood, [width, wallHeight, WALL], [0, wallY, z * (depth / 2 - WALL / 2)]);
+    }
+
+    for (const x of [-1, 1]) {
+      addSlab(this.boxRoot, wood, [WALL, wallHeight, depth - 2 * WALL], [x * (width / 2 - WALL / 2), wallY, 0]);
+    }
+
+    addSlab(
+      this.boxRoot,
+      this.materials.woodDark,
+      [width - 2 * WALL, 0.08, depth - 2 * WALL],
+      [0, FALSE_FLOOR_Y, 0],
+    );
+
+    // Lid: hinged on the back-top edge; opening rotates the pivot.
+    this.lidPivot.position.set(0, height / 2, -depth / 2);
+    this.boxRoot.add(this.lidPivot);
+
+    addSlab(this.lidPivot, wood, [width, LID_THICKNESS, depth], [0, -LID_THICKNESS / 2, depth / 2]);
+
+    this.insideLight.position.set(0, FALSE_FLOOR_Y + 1.2, 0);
+    this.boxRoot.add(this.insideLight);
+
+    // Click target for the open box; only registered once the lid is open.
+    this.insidePickMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(width - 2 * WALL, depth - 2 * WALL),
+      new THREE.MeshStandardMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    );
+    this.insidePickMesh.rotation.x = -Math.PI / 2;
+    this.insidePickMesh.position.y = height / 2;
+    this.insidePickMesh.userData.face = "inside";
 
     for (
       const name
@@ -586,6 +680,13 @@ export class PuzzleBox3D {
     }
 
     this.createBrassEdgeTrim();
+
+    // attach() keeps world transforms, so the top face and its trims
+    // simply ride along with the lid.
+    this.lidPivot.attach(this.faceAnchors.top);
+    for (const trim of this.lidTrims) {
+      this.lidPivot.attach(trim);
+    }
   }
 
   private getFaceSize(
@@ -813,6 +914,14 @@ export class PuzzleBox3D {
       trim.castShadow = true;
 
       this.boxRoot.add(trim);
+
+      // Horizontal trims along the top edges belong to the lid.
+      if (
+        y === height / 2 &&
+        geometry.parameters.height === t
+      ) {
+        this.lidTrims.push(trim);
+      }
     };
 
     for (
@@ -1100,15 +1209,30 @@ export class PuzzleBox3D {
   }
 
   private getCameraZ(
-    face: BoxFaceName | null,
+    face: FocusTarget | null,
   ) {
     if (!face) {
       return Math.max(
         OVERVIEW_CAMERA_Z,
         this.getFitDistance(
           OVERVIEW_FIT_WIDTH,
-          OVERVIEW_FIT_HEIGHT,
+          // Undefined during the first resize inside the constructor.
+          this.lid?.isOpen
+            ? OVERVIEW_FIT_HEIGHT + 4
+            : OVERVIEW_FIT_HEIGHT,
         ),
+      );
+    }
+
+    if (face === "inside") {
+      // Open box seen from 60° above, with the lid standing up behind it.
+      return Math.max(
+        FOCUS_CAMERA_Z,
+        this.dimensions.height / 2 +
+          this.getFitDistance(
+            this.dimensions.width * 1.12,
+            11.5,
+          ),
       );
     }
 
@@ -1261,6 +1385,7 @@ export class PuzzleBox3D {
     this.puzzleFour.dispose();
     this.puzzleFive.dispose();
     this.finalPuzzle.dispose();
+    this.lid.dispose();
 
     this.focusController.dispose();
     this.rotationController.dispose();
