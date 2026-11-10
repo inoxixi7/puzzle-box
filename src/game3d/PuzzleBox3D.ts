@@ -28,7 +28,7 @@ import { TouchKeysPuzzle } from "./puzzles/TouchKeysPuzzle";
 import { createLed, setLed } from "./puzzles/puzzleUtils";
 import type { InventoryItemId } from "./inventory/items";
 import { PALETTE } from "./palette";
-import { chime, shimmer } from "./sound";
+import { chime, hush, shimmer } from "./sound";
 
 // Phones / tablets get lighter rendering settings.
 const IS_TOUCH_DEVICE =
@@ -89,6 +89,26 @@ const DEBUG_LID =
   import.meta.env.DEV &&
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).has("lid");
+
+// Saved progress: how many steps of STAGES are done.
+const SAVE_KEY = "puzzle-box:stage";
+
+function readStage() {
+  try {
+    return Number(localStorage.getItem(SAVE_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeStage(stage: number | null) {
+  try {
+    if (stage === null) localStorage.removeItem(SAVE_KEY);
+    else localStorage.setItem(SAVE_KEY, String(stage));
+  } catch {
+    // Private mode: progress lasts for this visit only.
+  }
+}
 
 type ScreenInsets = {
   top: number;
@@ -164,6 +184,9 @@ export class PuzzleBox3D {
   private lid: BoxLid;
   // The face the player should work on next, for the hint button.
   private hintFace: FocusTarget = "front";
+  // Steps done, in play order; see STAGES in restoreProgress().
+  private stage = 0;
+  private disposed = false;
 
   private resizeObserver: ResizeObserver;
   private animationFrame = 0;
@@ -286,12 +309,14 @@ export class PuzzleBox3D {
         this.nfcPuzzle.powerOn(this.matrixPuzzle.pattern());
         options.onMazeSolved?.();
         this.hintFace = "back";
+        this.reach(1);
         // The e-ink screen says what the box wants next.
         this.presentLater(LEFT_VIEW, 1.6);
       },
       onCardPickedUp: () => {
         this.hintFace = "left";
         options.onCardPickedUp?.();
+        this.reach(3);
         this.presentLater(LEFT_VIEW, 0.5);
       },
     });
@@ -307,6 +332,7 @@ export class PuzzleBox3D {
         this.mazePuzzle.releaseCard();
         this.nfcPuzzle.cardReleased();
         this.hintFace = "front";
+        this.reach(2);
         this.presentLater(FRONT_VIEW, 0.4);
       },
     });
@@ -319,6 +345,9 @@ export class PuzzleBox3D {
       getSelectedItem,
       consumeItem,
       onTokenRead: () => {
+        this.reach(10);
+        // Finished: the next visit starts a fresh box.
+        writeStage(null);
         // Back to the whole box: the four status lights go blue one by one,
         // the prize rises out of the open box, then the ending card.
         this.delayedCalls.push(
@@ -343,6 +372,7 @@ export class PuzzleBox3D {
         this.cornerGearPuzzle.freeGear();
         options.onNfcSolved?.();
         this.hintFace = "right";
+        this.reach(4);
         // Leave time to read the log first.
         this.presentLater(RIGHT_VIEW, 2.6);
       },
@@ -360,10 +390,12 @@ export class PuzzleBox3D {
       onSolved: () => {
         this.lightStatus(3);
         options.onCornerGearSolved?.();
+        this.reach(5);
       },
       onMedalPickedUp: () => {
         options.onPuckPickedUp?.();
         this.hintFace = "top";
+        this.reach(6);
         this.presentLater(TOP_VIEW, 0.5);
       },
     });
@@ -385,6 +417,7 @@ export class PuzzleBox3D {
         );
         this.touchKeysPuzzle.setEnabled(false);
         options.onTouchKeysSolved?.();
+        this.reach(7);
       },
     });
 
@@ -399,11 +432,13 @@ export class PuzzleBox3D {
         // Blue light fills the box; the token hovers until it is taken.
         gsap.to(this.insideLight.color, { r: 0.35, g: 0.6, b: 1, duration: 1.5 });
         gsap.to(this.insideLight, { intensity: 26, duration: 1.5 });
+        this.reach(8);
       },
       onTokenTaken: () => {
         options.onTokenPickedUp?.();
         this.nfcPuzzle.tokenReleased();
         this.hintFace = "left";
+        this.reach(9);
         // Back to the whole box; where the token goes is for the player to find.
         this.delayedCalls.push(gsap.delayedCall(0.8, () => this.focusController.exitFocus()));
       },
@@ -495,6 +530,57 @@ export class PuzzleBox3D {
 
     this.resize();
     this.animate();
+    void this.restoreProgress(readStage());
+  }
+
+  private reach(stage: number) {
+    if (stage <= this.stage) return;
+    this.stage = stage;
+    writeStage(stage);
+  }
+
+  // Replays the saved steps through each mechanism's own solve path, sped up,
+  // silent and hidden, so the box ends up exactly as the player left it.
+  private async restoreProgress(saved: number) {
+    if (saved <= 0) return;
+    const STAGES = [
+      () => this.mazePuzzle.skipToPowered(),
+      () => this.matrixPuzzle.skipSolve(),
+      () => this.mazePuzzle.skipPickUpCard(),
+      () => this.nfcPuzzle.skipReadCard(),
+      () => this.cornerGearPuzzle.skipSolve(),
+      () => this.cornerGearPuzzle.skipPickUp(),
+      () => this.touchKeysPuzzle.skipSolve(),
+      () => this.interiorPuzzle.skipSolve(),
+      () => this.interiorPuzzle.skipTakeToken(),
+      // Never saved (finishing clears the save); lets a test replay the ending.
+      () => this.nfcPuzzle.skipReadToken(),
+    ];
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+    this.host.style.opacity = "0";
+    hush(true);
+    gsap.globalTimeline.timeScale(25);
+    try {
+      for (let i = 0; i < Math.min(saved, STAGES.length); i++) {
+        // The lid opens itself after stage 7; the inside needs it open.
+        while (i === 7 && !this.lid.isOpen && !this.disposed) await frame();
+        STAGES[i]();
+        for (let wait = 0; this.stage <= i && wait < 600; wait++) await frame();
+        if (this.disposed) return;
+        // A step that did not finish: stop here rather than skip ahead.
+        if (this.stage <= i) break;
+      }
+      // Let pending camera moves land before showing the box.
+      for (let wait = 0; wait < 30; wait++) await frame();
+    } finally {
+      if (!this.disposed) {
+        gsap.globalTimeline.timeScale(1);
+        hush(false);
+        this.host.style.transition = "opacity 0.5s";
+        this.host.style.opacity = "1";
+      }
+    }
   }
 
   private handleInput = () => {
@@ -1219,6 +1305,7 @@ export class PuzzleBox3D {
   }
 
   public dispose() {
+    this.disposed = true;
     cancelAnimationFrame(
       this.animationFrame,
     );

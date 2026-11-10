@@ -273,6 +273,12 @@ export class NfcReaderPuzzle {
     );
   }
 
+  // Restoring a saved game.
+  public skipReadCard() {
+    this.options.consumeItem("nfc-card");
+    this.readCard();
+  }
+
   private readCard() {
     this.solved = true;
     this.breathing?.kill();
@@ -307,6 +313,11 @@ export class NfcReaderPuzzle {
       { emissiveIntensity: 0.2 },
       { emissiveIntensity: 1.6, duration: 1.1, yoyo: true, repeat: -1, ease: "sine.inOut" },
     );
+  }
+
+  public skipReadToken() {
+    this.options.consumeItem("key-token");
+    this.readToken();
   }
 
   private readToken() {

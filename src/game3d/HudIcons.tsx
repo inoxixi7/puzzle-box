@@ -73,6 +73,23 @@ export function BackIcon() {
   );
 }
 
+// Sound on / off: a speaker with waves, or crossed out.
+export function SoundIcon({ muted }: { muted: boolean }) {
+  return (
+    <Icon size={24}>
+      <path d="M4 9.5 H7.5 L12 5.5 V18.5 L7.5 14.5 H4 Z" />
+      {muted ? (
+        <path d="M16 9.5 L21 14.5 M21 9.5 L16 14.5" />
+      ) : (
+        <>
+          <path d="M15.5 9 a4 4 0 0 1 0 6" />
+          <path d="M18 6.5 a7.5 7.5 0 0 1 0 11" />
+        </>
+      )}
+    </Icon>
+  );
+}
+
 // Hint: a light bulb.
 export function HintIcon() {
   return (

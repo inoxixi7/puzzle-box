@@ -152,6 +152,14 @@ export class LightsMatrixPuzzle {
     if (this.lit.every((on) => !on)) this.solve();
   }
 
+  // Restoring a saved game: every key dark.
+  public skipSolve() {
+    this.lit.fill(false);
+    this.keys.forEach((_, i) => this.show(i));
+    this.options.onChange?.(this.pattern());
+    this.solve();
+  }
+
   private solve() {
     this.solved = true;
     const materials = this.keys.map((k) => k.glow.material);

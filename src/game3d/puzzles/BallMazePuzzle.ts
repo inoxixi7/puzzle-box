@@ -352,6 +352,19 @@ export class BallMazePuzzle {
       });
   }
 
+  // Restoring a saved game: the ball goes straight into the hole.
+  public skipToPowered() {
+    this.cell = [...HOLE];
+    const hole = cellPosition(...HOLE);
+    this.ball.position.x = hole.x;
+    this.ball.position.y = hole.y;
+    this.drop();
+  }
+
+  public skipPickUpCard() {
+    this.pickUpCard();
+  }
+
   private drop() {
     this.powered = true;
     this.pointerId = null;

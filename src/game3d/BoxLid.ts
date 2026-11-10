@@ -54,8 +54,8 @@ export class BoxLid {
     return this.opened;
   }
 
-  // The latch lets go: the lid jumps, then rests open a crack with light
-  // showing along the seam.
+  // The latch lets go: the lid jumps, rests open a crack with light showing
+  // along the seam, then swings open by itself (it can be dragged sooner).
   public unlock() {
     if (this.unlocked) return;
     this.unlocked = true;
@@ -64,7 +64,8 @@ export class BoxLid {
     gsap
       .timeline()
       .to(this, { angle: 0.06, duration: 0.12, ease: "power2.out", onUpdate: () => this.setAngle(this.angle) })
-      .to(this, { angle: CRACK_ANGLE, duration: 0.5, ease: "bounce.out", onUpdate: () => this.setAngle(this.angle) });
+      .to(this, { angle: CRACK_ANGLE, duration: 0.5, ease: "bounce.out", onUpdate: () => this.setAngle(this.angle) })
+      .call(() => this.open(), [], "+=0.7");
   }
 
   public setEnabled(enabled: boolean) {

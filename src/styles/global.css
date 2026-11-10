@@ -72,8 +72,8 @@
     left: calc(20px + env(safe-area-inset-left));
     top: calc(18px + env(safe-area-inset-top));
     z-index: 10;
-    /* Leave room for the hint button on the right. */
-    max-width: calc(100% - 92px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    /* Leave room for two buttons on the right. */
+    max-width: calc(100% - 156px - env(safe-area-inset-left) - env(safe-area-inset-right));
     pointer-events: none;
     font-size: 13px;
     line-height: 1.5;
@@ -86,11 +86,6 @@
     display: flex;
     gap: 10px;
     align-items: center;
-  }
-
-  .hud-top-label.has-button {
-    /* Leave room for the hint and back buttons. */
-    max-width: calc(100% - 156px - env(safe-area-inset-left) - env(safe-area-inset-right));
   }
 
   .hud-back-button {
@@ -110,7 +105,7 @@
     color: var(--hud-text-strong);
   }
 
-  .hud-hint-button {
+  .hud-icon-button {
     position: absolute;
     right: calc(20px + env(safe-area-inset-right));
     top: calc(18px + env(safe-area-inset-top));
@@ -126,8 +121,8 @@
     color: var(--hud-text-strong);
   }
 
-  /* Sits left of the back button while a face is focused. */
-  .hud-hint-button.beside-back {
+  /* Second slot from the right: left of the back or hint button. */
+  .hud-icon-button.slot-2 {
     right: calc(20px + 52px + 8px + env(safe-area-inset-right));
   }
 
@@ -246,21 +241,17 @@
     .hud-top-label {
       left: calc(12px + env(safe-area-inset-left));
       top: calc(12px + env(safe-area-inset-top));
-      max-width: calc(100% - 72px);
+      max-width: calc(100% - 128px);
       font-size: 12px;
       padding: 7px 10px;
     }
 
-    .hud-top-label.has-button {
-      max-width: calc(100% - 128px);
-    }
-
-    .hud-hint-button {
+    .hud-icon-button {
       right: calc(12px + env(safe-area-inset-right));
       top: calc(12px + env(safe-area-inset-top));
     }
 
-    .hud-hint-button.beside-back {
+    .hud-icon-button.slot-2 {
       right: calc(12px + 48px + 8px + env(safe-area-inset-right));
     }
 
@@ -326,13 +317,13 @@
       min-height: 40px;
     }
 
-    .hud-hint-button {
+    .hud-icon-button {
       right: calc(12px + env(safe-area-inset-right));
       top: calc(10px + env(safe-area-inset-top));
       min-height: 40px;
     }
 
-    .hud-hint-button.beside-back {
+    .hud-icon-button.slot-2 {
       right: calc(12px + 48px + 8px + env(safe-area-inset-right));
     }
 

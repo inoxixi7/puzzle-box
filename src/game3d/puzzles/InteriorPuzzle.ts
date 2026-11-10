@@ -51,6 +51,8 @@ const PEGS: Vec[] = [
   [1.913, 0.7941],
   [1.2033, 1.1411],
 ];
+// The pegs above that open both latches.
+const SOLUTION: [Size, number][] = [["S", 7], ["S", 5], ["M", 3], ["M", 4]];
 const CASE = { x0: -2.6, x1: -1.4, z0: -0.6, z1: 0.6, height: 0.9 };
 // Inside walls, less a margin.
 const BOUNDS = { x: 2.77, z: 1.97 };
@@ -581,6 +583,27 @@ export class InteriorPuzzle {
     this.held = null;
     tick();
     this.move(gear, peg);
+  }
+
+  // Restoring a saved game: gears on the solution pegs, both latches open.
+  public skipSolve() {
+    for (const [size, peg] of SOLUTION) {
+      const gear = this.loose.find((g) => g.size === size && g.peg === null);
+      if (!gear) continue;
+      gear.peg = peg;
+      this.root.attach(gear.spinner);
+      gear.spinner.rotation.x = gear.spinner.rotation.z = 0;
+      gear.spinner.position.set(PEGS[peg][0], GEAR_LIFT, PEGS[peg][1]);
+    }
+    for (const { id } of LATCHES) {
+      this.progress[id] = LATCH_OPEN;
+      this.setBolt(id);
+    }
+    this.solve();
+  }
+
+  public skipTakeToken() {
+    this.takeToken();
   }
 
   private solve() {

@@ -19,6 +19,7 @@ import {
 import {
   BackIcon,
   HintIcon,
+  SoundIcon,
   LandscapeIcon,
   SpinDiskIcon,
   TapFaceIcon,
@@ -29,6 +30,7 @@ import {
   useGameStore,
 } from "../store/useGameStore";
 import { PALETTE, css } from "./palette";
+import { isMuted, setMuted } from "./sound";
 
 export function Game3DCanvas() {
   const hostRef =
@@ -40,6 +42,8 @@ export function Game3DCanvas() {
     useRef<
       PuzzleBox3D | null
     >(null);
+
+  const [muted, setMutedState] = useState(isMuted);
 
   const [
     focusedFace,
@@ -173,6 +177,22 @@ export function Game3DCanvas() {
         </div>
       )}
 
+      {!finalSolved && !focusedFace && (
+        <button
+          type="button"
+          onClick={() => {
+            setMuted(!muted);
+            setMutedState(!muted);
+          }}
+          className="hud-icon-button slot-2"
+          data-hud="top"
+          aria-label={muted ? "音を出す" : "消音"}
+          aria-pressed={muted}
+        >
+          <SoundIcon muted={muted} />
+        </button>
+      )}
+
       {!finalSolved && (
         <button
           type="button"
@@ -180,7 +200,7 @@ export function Game3DCanvas() {
             gameRef.current
               ?.hint();
           }}
-          className={`hud-hint-button${focusedFace ? " beside-back" : ""}`}
+          className={`hud-icon-button${focusedFace ? " slot-2" : ""}`}
           data-hud="top"
           aria-label="ヒント"
         >
@@ -192,7 +212,7 @@ export function Game3DCanvas() {
         <>
           {focusedFace === "front" && !frontSolved && (
             <div
-              className="hud-top-label has-button"
+              className="hud-top-label"
               data-hud="top"
               role="img"
               aria-label="円盤をドラッグして回す"

@@ -83,3 +83,4 @@ server. To share the game without a server, use the file from
   tap where to use it
 - The back-arrow button (top right) or the Esc key returns to the whole box
 - Stuck? The light-bulb button turns the box to the face to work on next
+- Progress is saved in the browser; reloading picks up where you left off

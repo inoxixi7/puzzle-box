@@ -5,6 +5,36 @@
 let ctx: AudioContext | null = null;
 let noise: AudioBuffer | null = null;
 
+const MUTE_KEY = "puzzle-box:muted";
+let muted = readMuted();
+
+function readMuted() {
+  try {
+    return localStorage.getItem(MUTE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+// Silence for a moment without touching the player's choice (restoring a game).
+let hushed = false;
+export function hush(on: boolean) {
+  hushed = on;
+}
+
+export function isMuted() {
+  return muted;
+}
+
+export function setMuted(value: boolean) {
+  muted = value;
+  try {
+    localStorage.setItem(MUTE_KEY, value ? "1" : "0");
+  } catch {
+    // Private mode: the choice lasts for this visit only.
+  }
+}
+
 function audio() {
   if (!ctx) {
     ctx = new AudioContext();
@@ -21,6 +51,7 @@ if (typeof window !== "undefined") {
 }
 
 function tone(freq: number, start: number, length: number, volume: number, type: OscillatorType = "sine") {
+  if (muted || hushed) return;
   const ac = audio();
   const osc = ac.createOscillator();
   const gain = ac.createGain();
@@ -36,6 +67,7 @@ function tone(freq: number, start: number, length: number, volume: number, type:
 }
 
 function burst(start: number, length: number, volume: number, filterFreq: number) {
+  if (muted || hushed) return;
   const ac = audio();
   const src = ac.createBufferSource();
   src.buffer = noise;

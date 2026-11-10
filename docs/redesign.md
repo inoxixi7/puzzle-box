@@ -37,9 +37,10 @@ each one needs a small translation (dial drawings → knob, the puck's arrow
 
 No puzzle here — the top face was the last lock. Act 2 is the release beat.
 
-1. **Lift.** Focus the top. The lid follows the drag with resistance;
-   released below ~30° it drops back with a thud. Past 30° it swings to
-   ~105° on its own and bounces once.
+1. **Lift.** The lid springs open a crack, then swings to ~105° on its own
+   and bounces once, so nobody gets stuck here. It can also be dragged open
+   sooner: it follows the drag with resistance, and released below ~30° it
+   drops back with a thud.
 2. **Light.** A light inside the box ramps up as the lid opens, spilling
    through the gap before the interior is visible.
 3. **Reveal.** Camera moves on its own over the box and looks in (~60° down),

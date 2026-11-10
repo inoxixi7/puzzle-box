@@ -801,6 +801,19 @@ export class CornerGearPuzzle {
       });
   }
 
+  // Restoring a saved game: the knob turned through its whole sequence.
+  public skipSolve() {
+    for (const direction of this.correctSequence) {
+      this.currentDirection = direction;
+      this.setDialRotation((-direction * Math.PI) / 4);
+      this.confirmDirection();
+    }
+  }
+
+  public skipPickUp() {
+    this.pickUpMedal();
+  }
+
   private pickUpMedal() {
     if (
       !this.medalAvailable ||

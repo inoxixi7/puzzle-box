@@ -189,6 +189,15 @@ export class TouchKeysPuzzle {
       });
   }
 
+  // Restoring a saved game: puck docked and aligned, code entered.
+  public skipSolve() {
+    this.options.consumeItem("magnet-puck");
+    this.dockPuck();
+    this.puck.rotation.z = -PUCK_TAB_ANGLE;
+    this.awake = true;
+    this.solve();
+  }
+
   private solve() {
     this.solved = true;
     const materials = this.keys.map((k) => k.glow.material);
