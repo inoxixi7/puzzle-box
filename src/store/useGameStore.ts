@@ -7,10 +7,9 @@ import {
 
 export type PuzzleId =
   | "front"
-  | "top"
-  | "back"
-  | "left"
-  | "right"
+  | "nfc"
+  | "cornerGear"
+  | "touchKeys"
   | "final";
 
 type InventorySlot =
@@ -59,10 +58,9 @@ const createEmptyInventory = () =>
 
 const createPuzzleState = (): PuzzleState => ({
   front: false,
-  top: false,
-  back: false,
-  left: false,
-  right: false,
+  nfc: false,
+  cornerGear: false,
+  touchKeys: false,
   final: false,
 });
 

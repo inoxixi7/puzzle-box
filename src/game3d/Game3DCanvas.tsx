@@ -58,12 +58,6 @@ export function Game3DCanvas() {
     FocusTarget | null
   >(null);
 
-  const selectedItem =
-    useGameStore(
-      (state) =>
-        state.selectedItem,
-    );
-
   const addItem =
     useGameStore(
       (state) =>
@@ -106,64 +100,31 @@ export function Game3DCanvas() {
             );
           },
 
-          onPuzzleOneSolved: () => {
-            markPuzzleSolved(
-              "front",
-            );
-          },
+          onMazeSolved: () =>
+            markPuzzleSolved("front"),
+          onNfcSolved: () =>
+            markPuzzleSolved("nfc"),
+          onCornerGearSolved: () =>
+            markPuzzleSolved("cornerGear"),
+          onTouchKeysSolved: () =>
+            markPuzzleSolved("touchKeys"),
+          onFinalSolved: () =>
+            markPuzzleSolved("final"),
 
-          onPuzzleTwoSolved: () => {
-            markPuzzleSolved(
-              "top",
-            );
-          },
-
-          onPuzzleThreeSolved: () => {
-            markPuzzleSolved(
-              "back",
-            );
-          },
-
-          onPuzzleFourSolved: () => {
-            markPuzzleSolved(
-              "left",
-            );
-          },
-
-          onPuzzleFiveSolved: () => {
-            markPuzzleSolved(
-              "right",
-            );
-          },
-
-          onFinalSolved: () => {
-            markPuzzleSolved(
-              "final",
-            );
-          },
-
-          onSheetPickedUp: () => {
+          onCardPickedUp: () => {
             addItem(
-              "overlay-sheet",
+              "nfc-card",
             );
           },
 
-          onGearPickedUp: () => {
+          onPuckPickedUp: () => {
             addItem(
-              "small-gear",
+              "magnet-puck",
             );
           },
 
-          onKeyPickedUp: () => {
-            addItem(
-              "brass-key",
-            );
-          },
-
-          onMedalPickedUp: () => {
-            addItem(
-              "seal-medal",
-            );
+          onTokenPickedUp: () => {
+            addItem("key-token");
           },
 
           getSelectedInventoryItem:
@@ -184,11 +145,6 @@ export function Game3DCanvas() {
 
     gameRef.current = game;
 
-    game.setSelectedInventoryItem(
-      useGameStore.getState()
-        .selectedItem,
-    );
-
     return () => {
       game.dispose();
       gameRef.current = null;
@@ -197,13 +153,6 @@ export function Game3DCanvas() {
     addItem,
     markPuzzleSolved,
   ]);
-
-  useEffect(() => {
-    gameRef.current
-      ?.setSelectedInventoryItem(
-        selectedItem,
-      );
-  }, [selectedItem]);
 
   return (
     <div
@@ -267,7 +216,7 @@ export function Game3DCanvas() {
             {focusedFace ===
               "front" &&
               !frontSolved &&
-              "・数字盤は上下にドラッグ"}
+              "・円盤をドラッグして回す"}
           </div>
 
           <button
@@ -311,7 +260,7 @@ export function Game3DCanvas() {
           <div
             style={{
               width:
-                "min(560px, calc(100vw - 40px))",
+                "min(300px, calc(100vw - 40px))",
               padding:
                 "38px 34px 32px",
               borderRadius: 18,
@@ -325,67 +274,72 @@ export function Game3DCanvas() {
                 "0 24px 70px rgba(0, 0, 0, 0.52), 0 0 48px rgba(45, 117, 224, 0.22)",
             }}
           >
-            <div
+            {/* No words: the gem, and a replay arrow. */}
+            <svg
+              viewBox="0 0 120 140"
+              width="120"
+              height="140"
+              aria-hidden="true"
               style={{
-                marginBottom: 14,
-                fontSize:
-                  "clamp(30px, 5vw, 42px)",
-                fontWeight: 700,
-                letterSpacing:
-                  "0.08em",
-                color: "#ffffff",
-                textShadow:
-                  "0 0 22px rgba(85, 154, 255, 0.34)",
+                display: "block",
+                margin: "0 auto 28px",
+                filter:
+                  "drop-shadow(0 0 22px rgba(220, 235, 255, 0.6))",
               }}
             >
-              おめでとうございます！
-            </div>
-
-            <div
-              style={{
-                margin:
-                  "0 auto 28px",
-                maxWidth: 430,
-                fontSize:
-                  "clamp(16px, 2.5vw, 20px)",
-                lineHeight: 1.8,
-                letterSpacing:
-                  "0.04em",
-                color:
-                  "rgba(224, 236, 255, 0.92)",
-              }}
-            >
-              宝箱の封印を解き、
-              <br />
-              青い宝石を手に入れました。
-            </div>
+              {/* Brilliant cut seen from the side: table, crown, pavilion. */}
+              <polygon points="38,28 82,28 112,56 60,132 8,56" fill="#e8f1ff" />
+              <polygon points="38,28 82,28 72,56 48,56" fill="#ffffff" />
+              <polygon points="38,28 48,56 8,56" fill="#c9dcff" />
+              <polygon points="82,28 112,56 72,56" fill="#dfe9ff" />
+              <polygon points="8,56 48,56 60,132" fill="#b4ccf5" />
+              <polygon points="48,56 72,56 60,132" fill="#f4f8ff" />
+              <polygon points="72,56 112,56 60,132" fill="#9fbdf0" />
+              <g fill="none" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1.2">
+                <polyline points="38,28 82,28 112,56 60,132 8,56 38,28" />
+                <line x1="8" y1="56" x2="112" y2="56" />
+              </g>
+              {/* Glints. */}
+              <path d="M94 14 L96 22 L104 24 L96 26 L94 34 L92 26 L84 24 L92 22 Z" fill="#ffffff" />
+              <path d="M26 86 L27.5 91 L32 92.5 L27.5 94 L26 99 L24.5 94 L20 92.5 L24.5 91 Z" fill="#ffffff" />
+            </svg>
 
             <button
               type="button"
+              aria-label="もう一度遊ぶ"
               onClick={() => {
                 window.location.reload();
               }}
               style={{
-                minWidth: 180,
-                minHeight: 52,
-                padding:
-                  "0 24px",
-                borderRadius: 12,
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
                 border:
                   "1px solid rgba(115, 170, 244, 0.72)",
                 background:
                   "rgba(41, 91, 161, 0.72)",
                 color: "#ffffff",
                 cursor: "pointer",
-                fontSize: 16,
-                fontWeight: 600,
-                letterSpacing:
-                  "0.06em",
+                display: "inline-grid",
+                placeItems: "center",
                 boxShadow:
                   "0 8px 22px rgba(18, 63, 132, 0.34)",
               }}
             >
-              もう一度遊ぶ
+              <svg
+                viewBox="0 0 24 24"
+                width="30"
+                height="30"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+                <path d="M20 4v5h-5" />
+              </svg>
             </button>
           </div>
         </div>

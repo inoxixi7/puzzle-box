@@ -17,132 +17,44 @@ function ItemIcon({
 }: {
   item: InventoryItemId;
 }) {
-  if (
-    item === "overlay-sheet"
-  ) {
+  if (item === "nfc-card") {
     return (
-      <svg
-        width="42"
-        height="32"
-        viewBox="0 0 42 32"
-        aria-hidden="true"
-      >
-        <rect
-          x="5"
-          y="4"
-          width="30"
-          height="22"
-          rx="2"
-          fill="rgba(145, 186, 190, 0.34)"
-          stroke="#c8dddf"
-          strokeWidth="2"
-          transform="rotate(-6 20 15)"
-        />
-        <path
-          d="M12 22 L27 8"
-          stroke="#6e9194"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <circle
-          cx="27"
-          cy="19"
-          r="4"
-          fill="none"
-          stroke="#6e9194"
-          strokeWidth="2"
-        />
-      </svg>
-    );
-  }
-
-  if (
-    item === "small-gear"
-  ) {
-    return (
-      <svg
-        width="38"
-        height="38"
-        viewBox="0 0 38 38"
-        aria-hidden="true"
-      >
-        <g
-          fill="none"
-          stroke="#c9a264"
-          strokeWidth="3"
-        >
-          <circle
-            cx="19"
-            cy="19"
-            r="11"
-          />
-          <circle
-            cx="19"
-            cy="19"
-            r="4"
-          />
-          <path d="M19 2 V8 M19 30 V36 M2 19 H8 M30 19 H36 M7 7 L11 11 M27 27 L31 31 M31 7 L27 11 M11 27 L7 31" />
+      <svg width="42" height="32" viewBox="0 0 42 32" aria-hidden="true">
+        <rect x="4" y="4" width="34" height="24" rx="3" fill="#e9e8e4" />
+        <g fill="none" stroke="#2a2b2f" strokeWidth="2" strokeLinecap="round">
+          <path d="M12 12 A6 6 0 0 1 12 20" />
+          <path d="M16 9 A10 10 0 0 1 16 23" />
         </g>
+        <rect x="25" y="8" width="9" height="2" fill="#ffa63a" />
       </svg>
     );
   }
 
-  if (
-    item === "brass-key"
-  ) {
+  // Hex token with its glowing blue ring.
+  if (item === "key-token") {
     return (
-      <svg
-        width="42"
-        height="36"
-        viewBox="0 0 42 36"
-        aria-hidden="true"
-      >
-        <g
-          fill="none"
-          stroke="#c9a264"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle
-            cx="13"
-            cy="15"
-            r="7"
-          />
-          <path d="M19 19 L35 30 M29 26 L33 22 M33 29 L37 25" />
-        </g>
+      <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+        <polygon points="20,2 35.6,11 35.6,29 20,38 4.4,29 4.4,11" fill="#b9bec5" stroke="#e4e7ea" strokeWidth="1" />
+        <circle cx="20" cy="20" r="8" fill="none" stroke="#4d8dff" strokeWidth="3" />
+        <circle cx="20" cy="20" r="4" fill="#1a1c20" />
       </svg>
     );
   }
 
+  // Magnetic puck, drawn as it sits docked: tab up, symbols clockwise
+  // from it along the engraved arrow.
   return (
-    <svg
-      width="42"
-      height="42"
-      viewBox="0 0 42 42"
-      aria-hidden="true"
-    >
-      <g
-        fill="none"
-        stroke="#c9a264"
-        strokeWidth="2.4"
-        strokeLinejoin="round"
-      >
-        <path d="M17 4 H25 V8 H29 L34 13 V17 H38 V25 H34 V29 L29 34 H25 V38 H17 V34 H13 L8 29 V25 H4 V17 H8 V13 L13 8 H17 Z" />
-        <circle
-          cx="21"
-          cy="21"
-          r="11"
-          stroke="#8f6839"
-        />
-        <path d="M21 15 L27 21 L21 27 L15 21 Z" />
+    <svg width="42" height="42" viewBox="0 0 42 42" aria-hidden="true">
+      <rect x="18.5" y="1" width="5" height="5" fill="#aeb3b9" />
+      <circle cx="21" cy="21" r="16" fill="#aeb3b9" stroke="#e4e7ea" strokeWidth="1.2" />
+      <g fill="none" stroke="#1c1d20" strokeWidth="1.4" strokeLinejoin="round">
+        <circle cx="28.5" cy="13.5" r="2.4" />
+        <path d="M28.5 25.5 L31.2 30.3 L25.8 30.3 Z" />
+        <path d="M13.5 25.5 L16.2 28.2 L13.5 30.9 L10.8 28.2 Z" />
+        <rect x="11.3" y="11.3" width="4.4" height="4.4" />
+        <path d="M23.5 15.6 A6 6 0 1 1 18.5 15.6" />
       </g>
-      <circle
-        cx="21"
-        cy="21"
-        r="2.3"
-        fill="#d8b574"
-      />
+      <path d="M18.5 15.6 L16.6 13.6 L16.2 16.8 Z" fill="#1c1d20" />
     </svg>
   );
 }

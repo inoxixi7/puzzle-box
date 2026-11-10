@@ -13,16 +13,18 @@ import {
   createBoxMaterials,
   type BoxMaterials,
 } from "./BoxMaterials";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 import { BoxRotationController } from "./BoxRotationController";
 import { BoxFaceFocusController } from "./BoxFaceFocusController";
 import { BoxLid } from "./BoxLid";
-import { FrontPuzzleOne } from "./puzzles/FrontPuzzleOne";
-import { LeftPuzzleFour } from "./puzzles/LeftPuzzleFour";
-import { TopPuzzleTwo } from "./puzzles/TopPuzzleTwo";
-import { BackPuzzleThree } from "./puzzles/BackPuzzleThree";
-import { RightPuzzleFive } from "./puzzles/RightPuzzleFive";
-import { BottomFinalPuzzle } from "./puzzles/BottomFinalPuzzle";
+import { BallMazePuzzle } from "./puzzles/BallMazePuzzle";
+import { NfcReaderPuzzle } from "./puzzles/NfcReaderPuzzle";
+import { LightsMatrixPuzzle } from "./puzzles/LightsMatrixPuzzle";
+import { CornerGearPuzzle } from "./puzzles/CornerGearPuzzle";
+import { InteriorPuzzle, createGearClueTexture } from "./puzzles/InteriorPuzzle";
+import { TouchKeysPuzzle } from "./puzzles/TouchKeysPuzzle";
+import { createLed, setLed } from "./puzzles/puzzleUtils";
 import type { InventoryItemId } from "./inventory/items";
 
 // Phones / tablets get lighter rendering settings.
@@ -39,8 +41,8 @@ const OVERVIEW_CAMERA_Z = 11.8;
 const FOCUS_CAMERA_Z = 9.6;
 
 // Screen area the box needs in the overview (any rotation), in world units.
-const OVERVIEW_FIT_WIDTH = 8.4;
-const OVERVIEW_FIT_HEIGHT = 7.0;
+const OVERVIEW_FIT_WIDTH = 8.6;
+const OVERVIEW_FIT_HEIGHT = 7.6;
 
 // Extra room around a focused face.
 const FOCUS_FIT_MARGIN = 1.06;
@@ -56,8 +58,29 @@ const LID_THICKNESS = 0.3;
 // False floor inside, above the front drawer.
 const FALSE_FLOOR_Y = -0.55;
 
-// shortcut: `?lid` unlocks the lid from the start, until the top-face lock
-// (redesign phase 2) unlocks it for real.
+// Aluminium base, set in under the body so a shadow line separates them.
+const PLINTH_HEIGHT = 0.5;
+const PLINTH_INSET = 0.14;
+
+// Ring 3 on the right face: the knob, and the drawer that gives the puck.
+const KNOB_POSITION = new THREE.Vector3(-0.85, 0.35, 0);
+const PUCK_DRAWER_POSITION = new THREE.Vector3(1.3, -0.45, 0);
+
+// Poses for "look here" after each ring.
+const LEFT_VIEW = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(0.28, Math.PI / 2 - 0.45, 0),
+);
+const FRONT_VIEW = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(0.25, -0.4, 0),
+);
+const RIGHT_VIEW = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(0.28, -Math.PI / 2 + 0.45, 0),
+);
+const TOP_VIEW = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(0.8, -0.45, 0),
+);
+
+// shortcut: `?lid` unlocks the lid from the start (for testing Acts 2–3).
 const DEBUG_LID =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).has("lid");
@@ -74,17 +97,15 @@ type PuzzleBox3DOptions = {
     face: FocusTarget | null,
   ) => void;
 
-  onPuzzleOneSolved?: () => void;
-  onPuzzleTwoSolved?: () => void;
-  onPuzzleThreeSolved?: () => void;
-  onPuzzleFourSolved?: () => void;
-  onPuzzleFiveSolved?: () => void;
+  onMazeSolved?: () => void;
+  onNfcSolved?: () => void;
+  onCornerGearSolved?: () => void;
+  onTouchKeysSolved?: () => void;
   onFinalSolved?: () => void;
 
-  onSheetPickedUp?: () => void;
-  onGearPickedUp?: () => void;
-  onKeyPickedUp?: () => void;
-  onMedalPickedUp?: () => void;
+  onCardPickedUp?: () => void;
+  onPuckPickedUp?: () => void;
+  onTokenPickedUp?: () => void;
 
   getSelectedInventoryItem?: () =>
     InventoryItemId | null;
@@ -114,19 +135,25 @@ export class PuzzleBox3D {
   private rotationController: BoxRotationController;
   private focusController: BoxFaceFocusController;
 
-  private puzzleOne: FrontPuzzleOne;
-  private puzzleTwo: TopPuzzleTwo;
-  private puzzleThree: BackPuzzleThree;
-  private puzzleFour: LeftPuzzleFour;
-  private puzzleFive: RightPuzzleFive;
-  private finalPuzzle: BottomFinalPuzzle;
+  // Act 1: front maze (power) → back matrix (card) → left NFC → right knob
+  // → top touch keys.
+  private mazePuzzle: BallMazePuzzle;
+  private matrixPuzzle: LightsMatrixPuzzle;
+  private nfcPuzzle: NfcReaderPuzzle;
+  private cornerGearPuzzle: CornerGearPuzzle;
+  private touchKeysPuzzle: TouchKeysPuzzle;
+  private interiorPuzzle: InteriorPuzzle;
 
 
   private focusMeshes =
     new Map<FocusTarget, THREE.Mesh>();
 
   private lidPivot = new THREE.Group();
-  private lidTrims: THREE.Mesh[] = [];
+  private knobAnchor = new THREE.Group();
+  private puckAnchor = new THREE.Group();
+  // Progress lights on the base: off until the maze powers the box.
+  private statusLeds: THREE.Mesh[] = [];
+  private delayedCalls: gsap.core.Tween[] = [];
   private insideLight = new THREE.PointLight(0xffc98a, 0, 7, 2);
   private insidePickMesh: THREE.Mesh;
   private lid: BoxLid;
@@ -235,129 +262,136 @@ export class PuzzleBox3D {
         this.boxRoot,
       );
 
-    this.puzzleOne =
-      new FrontPuzzleOne({
-        anchor:
-          this.faceAnchors.front,
-        canvas:
-          this.renderer.domElement,
-        camera: this.camera,
+    const canvas = this.renderer.domElement;
+    const getSelectedItem = () =>
+      options.getSelectedInventoryItem?.() ?? null;
+    const consumeItem = (item: InventoryItemId) =>
+      options.consumeInventoryItem?.(item) ?? false;
 
-        onSolved:
-          options.onPuzzleOneSolved,
+    // Ring 1 (front): the ball closes the circuit; the box wakes up.
+    this.mazePuzzle = new BallMazePuzzle({
+      anchor: this.faceAnchors.front,
+      canvas,
+      camera: this.camera,
+      onPowered: () => {
+        this.lightStatus(0);
+        this.matrixPuzzle.powerOn();
+        this.nfcPuzzle.powerOn(this.matrixPuzzle.pattern());
+        options.onMazeSolved?.();
+        // The e-ink screen says what the box wants next.
+        this.presentLater(LEFT_VIEW, 1.6);
+      },
+      onCardPickedUp: () => {
+        options.onCardPickedUp?.();
+        this.presentLater(LEFT_VIEW, 0.5);
+      },
+    });
 
-        onSheetPickedUp: () => {
-          options.onSheetPickedUp?.();
-        },
-      });
+    // Ring 2 (back): clearing the matrix makes the dispenser give the card.
+    this.matrixPuzzle = new LightsMatrixPuzzle({
+      anchor: this.faceAnchors.back,
+      canvas,
+      camera: this.camera,
+      onChange: (lit) => this.nfcPuzzle.setRearPattern(lit),
+      onSolved: () => {
+        this.lightStatus(1);
+        this.mazePuzzle.releaseCard();
+        this.nfcPuzzle.cardReleased();
+        this.presentLater(FRONT_VIEW, 0.4);
+      },
+    });
 
-    this.puzzleTwo =
-      new TopPuzzleTwo({
-        anchor:
-          this.faceAnchors.top,
-        canvas:
-          this.renderer.domElement,
-        camera: this.camera,
+    // Ring 3 (left): the card makes the e-ink screen print the knob sequence.
+    this.nfcPuzzle = new NfcReaderPuzzle({
+      anchor: this.faceAnchors.left,
+      canvas,
+      camera: this.camera,
+      getSelectedItem,
+      consumeItem,
+      onTokenRead: () => {
+        // Back to the whole box: the four status lights go blue one by one,
+        // the prize rises out of the open box, then the ending card.
+        this.delayedCalls.push(
+          gsap.delayedCall(1.2, () => this.focusController.exitFocus(FRONT_VIEW)),
+          gsap.delayedCall(3.4, () => this.interiorPuzzle.revealPrize()),
+        );
+        this.statusLeds.forEach((led, i) => {
+          this.delayedCalls.push(
+            gsap.delayedCall(2 + 0.35 * i, () => {
+              (led.material as THREE.MeshStandardMaterial).emissive.set(0x4d8dff);
+              setLed(led, 2.6, 0.2);
+            }),
+          );
+        });
+        this.delayedCalls.push(gsap.delayedCall(8.5, () => options.onFinalSolved?.()));
+      },
+      onSolved: () => {
+        this.lightStatus(2);
+        this.cornerGearPuzzle.freeGear();
+        options.onNfcSolved?.();
+        // Leave time to read the log first.
+        this.presentLater(RIGHT_VIEW, 2.6);
+      },
+    });
 
-        onSolved:
-          options.onPuzzleTwoSolved,
+    // Ring 4 (right face): the knob opens the drawer with the puck.
+    this.knobAnchor.position.copy(KNOB_POSITION);
+    this.puckAnchor.position.copy(PUCK_DRAWER_POSITION);
+    this.faceAnchors.right.add(this.knobAnchor, this.puckAnchor);
+    this.cornerGearPuzzle = new CornerGearPuzzle({
+      anchor: this.knobAnchor,
+      medalAnchor: this.puckAnchor,
+      canvas,
+      camera: this.camera,
+      onSolved: () => {
+        this.lightStatus(3);
+        options.onCornerGearSolved?.();
+      },
+      onMedalPickedUp: () => {
+        options.onPuckPickedUp?.();
+        this.presentLater(TOP_VIEW, 0.5);
+      },
+    });
 
-        onGearPickedUp: () => {
-          options.onGearPickedUp?.();
-        },
-      });
+    // Lid: docking the puck wakes touch keys hidden under the veneer.
+    this.touchKeysPuzzle = new TouchKeysPuzzle({
+      anchor: this.faceAnchors.top,
+      canvas,
+      camera: this.camera,
+      getSelectedItem,
+      consumeItem,
+      onSolved: () => {
+        // The lock lets go; the lid lifts a crack.
+        this.lid.unlock();
+        gsap.fromTo(
+          this.boxRoot.position,
+          { x: 0.06 },
+          { x: 0, duration: 0.5, ease: "elastic.out(1.2, 0.3)" },
+        );
+        this.touchKeysPuzzle.setEnabled(false);
+        options.onTouchKeysSolved?.();
+      },
+    });
 
-    this.puzzleThree =
-      new BackPuzzleThree({
-        anchor:
-          this.faceAnchors.back,
-        canvas:
-          this.renderer.domElement,
-        camera: this.camera,
-
-        onSolved:
-          options.onPuzzleThreeSolved,
-
-        onKeyPickedUp: () => {
-          options.onKeyPickedUp?.();
-        },
-      });
-
-    this.puzzleFour =
-      new LeftPuzzleFour({
-        anchor:
-          this.faceAnchors.left,
-        canvas:
-          this.renderer.domElement,
-        camera: this.camera,
-
-        getSelectedItem: () =>
-          options.getSelectedInventoryItem?.() ??
-          null,
-
-        consumeItem: (
-          item,
-        ) =>
-          options.consumeInventoryItem?.(
-            item,
-          ) ??
-          false,
-
-        onSolved:
-          options.onPuzzleFourSolved,
-      });
-
-    this.puzzleFive =
-      new RightPuzzleFive({
-        anchor:
-          this.faceAnchors.right,
-        canvas:
-          this.renderer.domElement,
-        camera: this.camera,
-
-        getSelectedItem: () =>
-          options.getSelectedInventoryItem?.() ??
-          null,
-
-        consumeItem: (
-          item,
-        ) =>
-          options.consumeInventoryItem?.(
-            item,
-          ) ??
-          false,
-
-        onSolved:
-          options.onPuzzleFiveSolved,
-
-        onMedalPickedUp: () => {
-          options.onMedalPickedUp?.();
-        },
-      });
-
-    this.finalPuzzle =
-      new BottomFinalPuzzle({
-        anchor:
-          this.faceAnchors.bottom,
-        canvas:
-          this.renderer.domElement,
-        camera: this.camera,
-
-        getSelectedItem: () =>
-          options.getSelectedInventoryItem?.() ??
-          null,
-
-        consumeItem: (
-          item,
-        ) =>
-          options.consumeInventoryItem?.(
-            item,
-          ) ??
-          false,
-
-        onSolved:
-          options.onFinalSolved,
-      });
+    this.interiorPuzzle = new InteriorPuzzle({
+      parent: this.boxRoot,
+      floorY: FALSE_FLOOR_Y + 0.04,
+      lid: this.lidPivot,
+      rackAt: new THREE.Vector3(0, -LID_THICKNESS, this.dimensions.depth / 2),
+      canvas: this.renderer.domElement,
+      camera: this.camera,
+      onSolved: () => {
+        // Blue light fills the box; the token hovers until it is taken.
+        gsap.to(this.insideLight.color, { r: 0.35, g: 0.6, b: 1, duration: 1.5 });
+        gsap.to(this.insideLight, { intensity: 26, duration: 1.5 });
+      },
+      onTokenTaken: () => {
+        options.onTokenPickedUp?.();
+        this.nfcPuzzle.tokenReleased();
+        // Back to the whole box; where the token goes is for the player to find.
+        this.delayedCalls.push(gsap.delayedCall(0.8, () => this.focusController.exitFocus()));
+      },
+    });
 
     this.lid = new BoxLid({
       pivot: this.lidPivot,
@@ -388,42 +422,23 @@ export class PuzzleBox3D {
         getCameraZ: (face) =>
           this.getCameraZ(face),
         // The open lid stands up behind the box; lower the box to keep both in frame.
-        getBoxY: (face) =>
-          face === "inside"
-            ? -1.7
-            : !face && this.lid.isOpen
-              ? -1.2
-              : 0,
+        getBoxOffset: (face) => {
+          // The open lid stands up behind the box; lower the box to keep both in frame.
+          if (face === "inside") return new THREE.Vector3(0, -1.7, 0);
+          if (!face && this.lid.isOpen) return new THREE.Vector3(0, -1.2, 0);
+          return new THREE.Vector3();
+        },
 
         onFocusChange: (face) => {
-          this.puzzleOne.setEnabled(
-            face === "front",
-          );
+          this.mazePuzzle.setEnabled(face === "front");
+          this.matrixPuzzle.setEnabled(face === "back");
+          this.nfcPuzzle.setEnabled(face === "left");
+          this.cornerGearPuzzle.setEnabled(face === "right");
 
-          // While the lid can be lifted, dragging on top moves the lid.
-          this.puzzleTwo.setEnabled(
-            face === "top" &&
-              !this.lid.isUnlocked,
-          );
-          this.lid.setEnabled(
-            face === "top",
-          );
-
-          this.puzzleThree.setEnabled(
-            face === "back",
-          );
-
-          this.puzzleFour.setEnabled(
-            face === "left",
-          );
-
-          this.puzzleFive.setEnabled(
-            face === "right",
-          );
-
-          this.finalPuzzle.setEnabled(
-            face === "bottom",
-          );
+          // Once unlocked, dragging on top lifts the lid instead.
+          this.touchKeysPuzzle.setEnabled(face === "top" && !this.lid.isUnlocked);
+          this.lid.setEnabled(face === "top");
+          this.interiorPuzzle.setEnabled(face === "inside");
 
           options.onFocusChange?.(
             face,
@@ -483,8 +498,16 @@ export class PuzzleBox3D {
   }
 
   private createScene() {
-    this.scene.background =
-      new THREE.Color(0x0b0d10);
+    // Product shot: dark warm grey, one soft key light from above.
+    const background = new THREE.Color(0x161517);
+    this.scene.background = background;
+    this.scene.fog = new THREE.Fog(background, 18, 36);
+
+    // Reflections for the aluminium and glass.
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environmentIntensity = 0.7;
+    pmrem.dispose();
 
     this.camera.position.set(
       0,
@@ -500,23 +523,23 @@ export class PuzzleBox3D {
 
     const hemisphere =
       new THREE.HemisphereLight(
-        0xc9d7e7,
-        0x291a12,
-        1.25,
+        0xe8e4dc,
+        0x1a1816,
+        0.5,
       );
 
     this.scene.add(hemisphere);
 
     const keyLight =
       new THREE.DirectionalLight(
-        0xffe0b8,
+        0xfff2e2,
         3.2,
       );
 
     keyLight.position.set(
-      5.5,
-      7,
-      8,
+      3,
+      10,
+      6,
     );
 
     keyLight.castShadow = true;
@@ -540,8 +563,8 @@ export class PuzzleBox3D {
 
     const fillLight =
       new THREE.DirectionalLight(
-        0x89a6c7,
-        1.15,
+        0xb8c4d6,
+        0.45,
       );
 
     fillLight.position.set(
@@ -554,8 +577,8 @@ export class PuzzleBox3D {
 
     const rimLight =
       new THREE.PointLight(
-        0xd7a76b,
-        18,
+        0xffffff,
+        10,
         18,
         2,
       );
@@ -575,8 +598,8 @@ export class PuzzleBox3D {
           30,
         ),
         new THREE.MeshStandardMaterial({
-          color: 0x111317,
-          roughness: 0.96,
+          color: 0x1c1b1d,
+          roughness: 0.95,
           metalness: 0,
         }),
       );
@@ -632,7 +655,7 @@ export class PuzzleBox3D {
 
     addSlab(
       this.boxRoot,
-      this.materials.woodDark,
+      this.materials.graphite,
       [width - 2 * WALL, 0.08, depth - 2 * WALL],
       [0, FALSE_FLOOR_Y, 0],
     );
@@ -642,6 +665,30 @@ export class PuzzleBox3D {
     this.boxRoot.add(this.lidPivot);
 
     addSlab(this.lidPivot, wood, [width, LID_THICKNESS, depth], [0, -LID_THICKNESS / 2, depth / 2]);
+
+    // Plaque on the inside of the back wall, above the gear floor. It tips
+    // back to face up toward the camera looking down into the box, and
+    // the white inlay glows a little so it reads in the dim interior.
+    const clueWidth = width * 0.5;
+    const clueTilt = 0.55;
+    const clueMap = createGearClueTexture();
+    const clue = new THREE.Mesh(
+      new THREE.PlaneGeometry(clueWidth, clueWidth / 2),
+      new THREE.MeshStandardMaterial({
+        map: clueMap,
+        emissive: 0xffffff,
+        emissiveMap: clueMap,
+        emissiveIntensity: 0.35,
+        roughness: 0.9,
+      }),
+    );
+    clue.rotation.x = -clueTilt;
+    clue.position.set(
+      0,
+      (FALSE_FLOOR_Y + wallY + wallHeight / 2) / 2 + 0.25,
+      -depth / 2 + WALL + Math.sin(clueTilt) * (clueWidth / 4) + 0.01,
+    );
+    this.boxRoot.add(clue);
 
     this.insideLight.position.set(0, FALSE_FLOOR_Y + 1.2, 0);
     this.boxRoot.add(this.insideLight);
@@ -679,14 +726,67 @@ export class PuzzleBox3D {
       );
     }
 
-    this.createBrassEdgeTrim();
+    this.createLidSeam();
 
-    // attach() keeps world transforms, so the top face and its trims
-    // simply ride along with the lid.
+    // attach() keeps world transforms, so the top face simply rides along
+    // with the lid.
     this.lidPivot.attach(this.faceAnchors.top);
-    for (const trim of this.lidTrims) {
-      this.lidPivot.attach(trim);
+
+    this.createPlinth();
+
+    // Under the plinth now; nothing to look at.
+    this.focusMeshes.delete("bottom");
+  }
+
+  // Graphite line where the lid meets the body: the one visible joint.
+  private createLidSeam() {
+    const { width, height, depth } = this.dimensions;
+    const y = height / 2 - LID_THICKNESS;
+    const t = 0.03;
+    const proud = 0.006;
+    for (const z of [-1, 1]) {
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(width + proud * 2, t, t), this.materials.graphite);
+      strip.position.set(0, y, z * (depth / 2 - t / 2 + proud));
+      this.boxRoot.add(strip);
     }
+    for (const x of [-1, 1]) {
+      const strip = new THREE.Mesh(new THREE.BoxGeometry(t, t, depth + proud * 2), this.materials.graphite);
+      strip.position.set(x * (width / 2 - t / 2 + proud), y, 0);
+      this.boxRoot.add(strip);
+    }
+  }
+
+  private createPlinth() {
+    const { width, height, depth } = this.dimensions;
+    const plinthWidth = width - PLINTH_INSET * 2;
+    const plinthDepth = depth - PLINTH_INSET * 2;
+
+    const plinth = new THREE.Mesh(
+      new THREE.BoxGeometry(plinthWidth, PLINTH_HEIGHT, plinthDepth),
+      this.materials.aluminum,
+    );
+    plinth.position.y = -height / 2 - PLINTH_HEIGHT / 2;
+    plinth.castShadow = true;
+    plinth.receiveShadow = true;
+    this.boxRoot.add(plinth);
+
+    // Four status lights, one per ring, on the front of the base.
+    for (let i = 0; i < 4; i++) {
+      const led = createLed(new THREE.CircleGeometry(0.075, 24));
+      led.position.set(-plinthWidth / 2 + 0.45 + i * 0.28, plinth.position.y, plinthDepth / 2 + 0.002);
+      this.boxRoot.add(led);
+      this.statusLeds.push(led);
+    }
+  }
+
+  private lightStatus(index: number) {
+    setLed(this.statusLeds[index], 2.2, 0.4);
+  }
+
+  private presentLater(rotation: THREE.Quaternion, delay: number) {
+    this.delayedCalls.push(
+      gsap.delayedCall(delay, () => this.focusController.present(rotation)),
+    );
   }
 
   private getFaceSize(
@@ -730,280 +830,18 @@ export class PuzzleBox3D {
     height: number,
     face: BoxFaceName,
   ) {
-    const panelWidth =
-      width - 0.32;
-
-    const panelHeight =
-      height - 0.32;
-
-    const panelMaterial =
-      this.materials.woodInset.clone();
-
-    panelMaterial.emissive.set(
-      0x000000,
+    // Own copy: the focus highlight changes this face only. A hair smaller
+    // than the face, so the body wood shows as a fine line round it.
+    const panel = new THREE.Mesh(
+      new THREE.PlaneGeometry(width - 0.12, height - 0.12),
+      this.materials.panel.clone(),
     );
-
-    panelMaterial.emissiveIntensity =
-      0;
-
-    const panel =
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(
-          panelWidth,
-          panelHeight,
-        ),
-        panelMaterial,
-      );
-
-    panel.position.z = 0.018;
+    panel.position.z = 0.012;
     panel.receiveShadow = true;
-
-    panel.name =
-      `panel-${face}`;
-
-    panel.userData.face =
-      face;
-
+    panel.name = `panel-${face}`;
+    panel.userData.face = face;
     anchor.add(panel);
-
-    this.focusMeshes.set(
-      face,
-      panel,
-    );
-
-    const railThickness =
-      0.085;
-
-    const railDepth =
-      0.07;
-
-    const topRail =
-      new THREE.Mesh(
-        new THREE.BoxGeometry(
-          panelWidth,
-          railThickness,
-          railDepth,
-        ),
-        this.materials.brassDark,
-      );
-
-    topRail.position.set(
-      0,
-      panelHeight / 2,
-      0.07,
-    );
-
-    const bottomRail =
-      topRail.clone();
-
-    bottomRail.position.y =
-      -panelHeight / 2;
-
-    const leftRail =
-      new THREE.Mesh(
-        new THREE.BoxGeometry(
-          railThickness,
-          panelHeight,
-          railDepth,
-        ),
-        this.materials.brassDark,
-      );
-
-    leftRail.position.set(
-      -panelWidth / 2,
-      0,
-      0.07,
-    );
-
-    const rightRail =
-      leftRail.clone();
-
-    rightRail.position.x =
-      panelWidth / 2;
-
-    for (const rail of [
-      topRail,
-      bottomRail,
-      leftRail,
-      rightRail,
-    ]) {
-      rail.castShadow = true;
-      rail.receiveShadow = true;
-      anchor.add(rail);
-    }
-
-    const screwGeometry =
-      new THREE.CylinderGeometry(
-        0.055,
-        0.055,
-        0.035,
-        16,
-      );
-
-    const screwPositions = [
-      [
-        -panelWidth / 2 + 0.16,
-        panelHeight / 2 - 0.16,
-      ],
-      [
-        panelWidth / 2 - 0.16,
-        panelHeight / 2 - 0.16,
-      ],
-      [
-        -panelWidth / 2 + 0.16,
-        -panelHeight / 2 + 0.16,
-      ],
-      [
-        panelWidth / 2 - 0.16,
-        -panelHeight / 2 + 0.16,
-      ],
-    ];
-
-    for (
-      const [x, y]
-      of screwPositions
-    ) {
-      const screw =
-        new THREE.Mesh(
-          screwGeometry,
-          this.materials.brass,
-        );
-
-      screw.rotation.x =
-        Math.PI / 2;
-
-      screw.position.set(
-        x,
-        y,
-        0.105,
-      );
-
-      screw.castShadow = true;
-
-      anchor.add(screw);
-    }
-  }
-
-  private createBrassEdgeTrim() {
-    const {
-      width,
-      height,
-      depth,
-    } = this.dimensions;
-
-    const t = 0.075;
-
-    const addTrim = (
-      geometry: THREE.BoxGeometry,
-      x: number,
-      y: number,
-      z: number,
-    ) => {
-      const trim =
-        new THREE.Mesh(
-          geometry,
-          this.materials.brassDark,
-        );
-
-      trim.position.set(
-        x,
-        y,
-        z,
-      );
-
-      trim.castShadow = true;
-
-      this.boxRoot.add(trim);
-
-      // Horizontal trims along the top edges belong to the lid.
-      if (
-        y === height / 2 &&
-        geometry.parameters.height === t
-      ) {
-        this.lidTrims.push(trim);
-      }
-    };
-
-    for (
-      const y
-      of [
-        -height / 2,
-        height / 2,
-      ]
-    ) {
-      for (
-        const z
-        of [
-          -depth / 2,
-          depth / 2,
-        ]
-      ) {
-        addTrim(
-          new THREE.BoxGeometry(
-            width + t,
-            t,
-            t,
-          ),
-          0,
-          y,
-          z,
-        );
-      }
-    }
-
-    for (
-      const x
-      of [
-        -width / 2,
-        width / 2,
-      ]
-    ) {
-      for (
-        const z
-        of [
-          -depth / 2,
-          depth / 2,
-        ]
-      ) {
-        addTrim(
-          new THREE.BoxGeometry(
-            t,
-            height + t,
-            t,
-          ),
-          x,
-          0,
-          z,
-        );
-      }
-    }
-
-    for (
-      const x
-      of [
-        -width / 2,
-        width / 2,
-      ]
-    ) {
-      for (
-        const y
-        of [
-          -height / 2,
-          height / 2,
-        ]
-      ) {
-        addTrim(
-          new THREE.BoxGeometry(
-            t,
-            t,
-            depth + t,
-          ),
-          x,
-          y,
-          0,
-        );
-      }
-    }
+    this.focusMeshes.set(face, panel);
   }
 
   private resize() {
@@ -1278,6 +1116,9 @@ export class PuzzleBox3D {
 
     this.timer.update(timestamp);
 
+    // Before the idle check: the ball may need to start rolling.
+    this.mazePuzzle.update();
+
     const delta =
       Math.min(
         this.timer.getDelta(),
@@ -1332,25 +1173,6 @@ export class PuzzleBox3D {
     this.focusController.exitFocus();
   }
 
-  public setSelectedInventoryItem(
-    item:
-      InventoryItemId | null,
-  ) {
-    this.puzzleFour.setSelectedItem(
-      item,
-    );
-
-    this.puzzleFive.setSelectedItem(
-      item,
-    );
-
-    this.finalPuzzle.setSelectedItem(
-      item,
-    );
-
-    this.needsRender = true;
-  }
-
   public dispose() {
     cancelAnimationFrame(
       this.animationFrame,
@@ -1379,13 +1201,15 @@ export class PuzzleBox3D {
 
     this.timer.dispose();
 
-    this.puzzleOne.dispose();
-    this.puzzleTwo.dispose();
-    this.puzzleThree.dispose();
-    this.puzzleFour.dispose();
-    this.puzzleFive.dispose();
-    this.finalPuzzle.dispose();
+    this.mazePuzzle.dispose();
+    this.matrixPuzzle.dispose();
+    this.nfcPuzzle.dispose();
+    this.cornerGearPuzzle.dispose();
+    this.touchKeysPuzzle.dispose();
+    this.interiorPuzzle.dispose();
     this.lid.dispose();
+    for (const call of this.delayedCalls) call.kill();
+    for (const led of this.statusLeds) gsap.killTweensOf(led.material);
 
     this.focusController.dispose();
     this.rotationController.dispose();
@@ -1472,6 +1296,7 @@ export class PuzzleBox3D {
       material.dispose();
     }
 
+    this.scene.environment?.dispose();
     this.renderer.dispose();
 
     if (

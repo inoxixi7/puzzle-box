@@ -13,8 +13,12 @@ type BoxFaceFocusControllerOptions = {
   // Camera distance for the overview (null) or a focused face.
   // Depends on the screen shape, so it is asked for each time.
   getCameraZ: (face: FocusTarget | null) => number;
-  // Vertical shift of the box, e.g. to keep the open lid in frame.
-  getBoxY: (face: FocusTarget | null) => number;
+  // Where to move the box for a target seen at the given rotation, e.g. to
+  // keep the open lid in frame.
+  getBoxOffset: (
+    face: FocusTarget | null,
+    rotation: THREE.Quaternion,
+  ) => THREE.Vector3;
   onFocusChange?: (face: FocusTarget | null) => void;
 };
 
@@ -58,7 +62,10 @@ export class BoxFaceFocusController {
   private focusing = false;
   private onFocusChange?: (face: FocusTarget | null) => void;
   private getCameraZ: (face: FocusTarget | null) => number;
-  private getBoxY: (face: FocusTarget | null) => number;
+  private getBoxOffset: (
+    face: FocusTarget | null,
+    rotation: THREE.Quaternion,
+  ) => THREE.Vector3;
 
   constructor(options: BoxFaceFocusControllerOptions) {
     this.canvas = options.canvas;
@@ -68,7 +75,7 @@ export class BoxFaceFocusController {
     this.rotationController = options.rotationController;
     this.onFocusChange = options.onFocusChange;
     this.getCameraZ = options.getCameraZ;
-    this.getBoxY = options.getBoxY;
+    this.getBoxOffset = options.getBoxOffset;
 
     this.canvas.addEventListener("pointermove", this.handlePointerMove);
     this.canvas.addEventListener("pointerdown", this.handlePointerDown);
@@ -239,12 +246,12 @@ export class BoxFaceFocusController {
 
     material.emissive.set(
       highlighted
-        ? 0x7b5426
+        ? 0x3a2814
         : 0x000000,
     );
 
     material.emissiveIntensity =
-      highlighted ? 0.34 : 0;
+      highlighted ? 0.12 : 0;
   }
 
   // Also switches directly from one focused target to another.
@@ -311,13 +318,14 @@ export class BoxFaceFocusController {
     });
 
     gsap.to(this.boxRoot.position, {
-      y: this.getBoxY(face),
+      ...this.getBoxOffset(face, targetQuaternion),
       duration: 0.58,
       ease: "power3.inOut",
     });
   }
 
-  public exitFocus() {
+  // `rotation`: turn the box to this pose on the way out (see present()).
+  public exitFocus(rotation?: THREE.Quaternion) {
     if (!this.focusedFace || this.focusing) return;
 
     const previousFace = this.focusedFace;
@@ -339,26 +347,46 @@ export class BoxFaceFocusController {
       },
     });
 
+    const target =
+      rotation ??
+      (previousFace === "inside" ? OPEN_OVERVIEW_ROTATION : null);
+
     gsap.to(this.boxRoot.position, {
-      y: this.getBoxY(null),
+      ...this.getBoxOffset(null, target ?? this.boxRoot.quaternion),
       duration: 0.38,
       ease: "power2.inOut",
     });
 
-    if (previousFace === "inside") {
-      const start = this.boxRoot.quaternion.clone();
-      const state = { t: 0 };
-      gsap.to(state, {
-        t: 1,
-        duration: 0.5,
-        ease: "power2.inOut",
-        onUpdate: () => {
-          this.boxRoot.quaternion.slerpQuaternions(start, OPEN_OVERVIEW_ROTATION, state.t);
-        },
-      });
-    }
+    if (target) this.turnTo(target, 0.7);
 
     this.onFocusChange?.(null);
+  }
+
+  private turnTo(target: THREE.Quaternion, duration: number) {
+    const start = this.boxRoot.quaternion.clone();
+    const state = { t: 0 };
+    gsap.to(state, {
+      t: 1,
+      duration,
+      ease: "power2.inOut",
+      onUpdate: () => {
+        this.boxRoot.quaternion.slerpQuaternions(start, target, state.t);
+      },
+    });
+  }
+
+  // "Look here": after a ring is solved, leave the face and turn the box to
+  // show the part that just changed.
+  public present(rotation: THREE.Quaternion) {
+    if (this.focusing) return;
+
+    if (this.focusedFace) {
+      this.exitFocus(rotation);
+      return;
+    }
+
+    this.rotationController.stopInertia();
+    this.turnTo(rotation, 0.8);
   }
 
   // Called after a resize / rotation of the phone.
@@ -374,8 +402,9 @@ export class BoxFaceFocusController {
         this.focusedFace,
       );
 
-    this.boxRoot.position.y =
-      this.getBoxY(this.focusedFace);
+    this.boxRoot.position.copy(
+      this.getBoxOffset(this.focusedFace, this.boxRoot.quaternion),
+    );
 
     if (!this.focusedFace) {
       this.rotationController.setEnabled(true);

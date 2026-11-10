@@ -1,10 +1,9 @@
 export const INVENTORY_SIZE = 5;
 
 export type InventoryItemId =
-  | "overlay-sheet"
-  | "small-gear"
-  | "brass-key"
-  | "seal-medal";
+  | "nfc-card"
+  | "magnet-puck"
+  | "key-token";
 
 export type InventoryItemDefinition = {
   id: InventoryItemId;
@@ -16,27 +15,21 @@ export const INVENTORY_ITEMS: Record<
   InventoryItemId,
   InventoryItemDefinition
 > = {
-  "overlay-sheet": {
-    id: "overlay-sheet",
-    name: "透明板",
+  "nfc-card": {
+    id: "nfc-card",
+    name: "アクセスカード",
     consumable: true,
   },
 
-  "small-gear": {
-    id: "small-gear",
-    name: "小さな歯車",
+  "magnet-puck": {
+    id: "magnet-puck",
+    name: "磁気パック",
     consumable: true,
   },
 
-  "brass-key": {
-    id: "brass-key",
-    name: "真鍮の鍵",
-    consumable: true,
-  },
-
-  "seal-medal": {
-    id: "seal-medal",
-    name: "封印メダル",
+  "key-token": {
+    id: "key-token",
+    name: "キートークン",
     consumable: true,
   },
 };

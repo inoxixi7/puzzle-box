@@ -8,28 +8,30 @@ ending happens inside.
 
 ### Act 1 — Shell (exterior)
 
-Three stages. The gear is not an item: it is a **corner gear** built into the
-right-top edge of the box, half visible on the right face and half on the top.
-It is there from the start, jammed.
+No words anywhere on the box: every message is a pictogram, so players of
+any language can play. (The HUD around the scene is separate.)
 
-| Stage | Face  | Puzzle                                                        | Gives / causes                         |
-|-------|-------|---------------------------------------------------------------|----------------------------------------|
-| 1     | Front | Sigil counts → code 3142 → drawer (existing)                  | Overlay sheet; drawer frees the gear (L1) |
-| 2     | Right | Lay the sheet on the right face → clue 1-4-6; turn the corner gear to stops 1 → 4 → 6 (replaces the direction dial) | Compartment opens: seal medal |
-| 3     | Top   | Medal into the top socket + symbol dial ○△◇□ (moved from bottom) | Lid latch releases (L2) → Act 2   |
+Style: modern puzzle box. Walnut body, brushed aluminium base and hardware,
+smoked glass windows, graphite details, one amber accent light. No printed
+UI on the box; every mechanism is a physical or electronic part.
 
-Removed: top three rings, back slider maze + brass key, the separate left
-overlay face, the right-face direction dial. Back, left and bottom become
-plain (decorated) faces.
+Progression: the box starts **dead**. The first ring is purely mechanical and
+closes a circuit; each later ring is more electronic. Four amber status
+lights on the base count the rings. Clues are never handed over as answers:
+each one needs a small translation (dial drawings → knob, the puck's arrow
+→ key order).
 
-Linkages:
+| # | Where | Mechanism | Solving it |
+|---|-------|-----------|------------|
+| 1 | Front | 7×7 tilt maze behind round glass. Drag to turn the disk; the steel ball rolls with real gravity (also when the whole box is turned). A trap hole looks like the real one and drops the ball back to the start. Eleven quarter turns at the least; one way only never works | Ball drops into the lit hole and closes the contacts: the box powers up, status light 1 |
+| 2 | Back | 3×3 backlit touch matrix (lights-out): a press flips the key and its neighbours; clear all lights (4 presses at the least). The goal is on the left e-ink screen, which wakes with the power: [live copy of the matrix] → [all dark] → [card, open lock], the copy following every press | The front dispenser pushes out the **access card**, the NFC pad starts breathing, status light 2 |
+| 3 | Left | Smoked glass over an e-ink screen and a hidden NFC pad | Card on the pad (the screen shows card → pad): e-ink refresh draws an open lock and three dials pointing ↗ ↓ ←, with 1, 2, 3 dots under them for the order; the knob unlocks, status light 3 |
+| 4 | Right | Knob with detents set into the face, drawn the same way as the dials on the screen; turn it to ↗ ↓ ← (judged on each snap). Its gear sits inside the box (seen again in Act 3) | A drawer beside it pops out the **magnetic puck**: one key tab, four engraved symbols, and an arrow that starts at the tab and runs clockwise through them. Status light 4 |
+| 5 | Lid | Looks like plain wood. Dock the puck, then turn it until its tab meets the engraved mark: the hall sensor wakes capacitive keys lit through the veneer. Order = the symbols along the puck's arrow (○ △ ◇ □); they stand upright only when the puck is aligned. Keys light on press but only a full four-key entry is judged, so guessing key by key gives nothing away | Lock releases, the lid lifts a crack → Act 2 |
 
-- **L1** Pulling the drawer out knocks a pin loose inside; the corner gear,
-  which wiggled but would not turn, now turns.
-- **L1b** Turning the corner gear on the right face also turns the symbol
-  dial on top — the player sees one part drive another face before stage 3.
-- **L2** Solving the top: a heavy clunk, the lid rises a few mm and a seam of
-  light appears along its edge.
+- After each ring the camera turns the box to show what just changed.
+- No confirm buttons anywhere. Wrong input resets; starting again on the
+  first correct input counts as step one.
 
 ### Act 2 — Lid (top)
 
@@ -42,11 +44,9 @@ No puzzle here — the top face was the last lock. Act 2 is the release beat.
 2. **Light.** A light inside the box ramps up as the lid opens, spilling
    through the gap before the interior is visible.
 3. **Reveal.** Camera moves on its own over the box and looks in (~60° down),
-   then a slow ~2 s pan along the walls: the back of the corner gear and its
-   shaft, the pin the drawer knocked loose, the push rod from the drawer.
-   "It was all one machine." Then control returns.
-4. **Clue.** The underside of the open lid faces the camera and carries the
-   engraving for Act 3.
+   then control returns.
+4. **Clue.** The underside of the open lid holds the gear rack; the clue
+   plaque stands against the back wall.
 
 After that: 「観察に戻る」 returns to the overview with the lid open; the box
 can still be rotated; tapping the opening re-enters the inside view.
@@ -57,31 +57,48 @@ Everything is already in the box; no items are picked up.
 
 Layout (seen from above, on a false floor above the drawer):
 
-- **Driver**: the back of the corner gear, right-back corner. Dragging it
-  turns it (same part as Act 1, now seen from inside).
-- **Inner case**: centre, holds the gem. A latch disc on its side, with an
-  arrow showing which way opens it.
-- **Three idler gears on swing arms** between them. Tap an arm to swing its
-  gear into or out of mesh.
+- **Driver** (D): aluminium gear against the right wall, with a pawl so it
+  only turns clockwise (engraved arrow). Drag it round to turn it.
+- **Inner case**: left, holds the gem, bolted by a rod from each latch.
+- **Two latch gears**, graphite, each with an amber arrow the way it opens:
+  L1 (back) counter-clockwise, L2 (front) clockwise. Both must turn open in
+  the same drag; on release springs turn them back shut. A latch turned the
+  wrong way gives a little, clunks, and stops the whole train.
+- **Peg board**: ten pegs on the floor. **Rack** on the underside of the
+  open lid with six loose gears: one large, two medium, three small; two are spares. Tap a gear to take it
+  (it glows), tap a free peg to fit it; tap a fitted gear to put it back. A
+  gear too big for the gap will not go in.
 
-Turning the driver shows what the current setup does:
+Two gears mesh only when the pegs are exactly r1 + r2 apart, so which size
+goes where has to be worked out. Each mesh reverses the turn; an odd ring
+jams. The layout comes from a search that tries every way to fit the gears:
+exactly one opens both latches (S on pegs 7 and 5, M on 3 and 4:
+D–S–S–M, and that M drives L2 directly and L1 through the other M). The
+answer branches, so one gear is shared by both latches, and the large gear
+is a decoy. Of the other fits, 279 turn a latch the wrong way, 417 jam,
+82 open only one latch.
 
-| Setup                                   | Result                                     |
-|-----------------------------------------|--------------------------------------------|
-| Chain does not reach the latch          | Gears spin, latch idle                     |
-| Three gears meshing in a loop           | Jams: driver will not turn, creak          |
-| Chain reaches latch, wrong direction    | Latch turns the wrong way, clunks, stops   |
-| Chain reaches latch, right direction    | Latch opens                                |
+Clue (white inlay on a plaque against the back wall, tipped up to face the player): two meshing gears with opposite arrows; three
+gears in a ring, crossed out. Pictures only.
 
-Clue (lid underside): an arrow on the driver and an arrow on the latch, both
-the same way. Players learn from the wrong-direction clunk that the number
-of gears in between decides direction. Exactly one arm setup is correct;
-positions are tuned during implementation so both a short wrong path and a
-longer right path exist.
+Then: both bolts retract, the case lid springs up, and out of the case rises
+a **key token** (a machined hex coin with a glowing blue ring) that hovers
+over the box; light in the box turns blue. Tap it to take it (inventory);
+the camera pulls back to the whole box.
 
-Ending: latch spins open → the inner case lid springs up → the gem rises on a
-small lift, blue light fills the box and spills out of the opening → camera
-pulls back to the whole box glowing → ending card (title + 「もう一度遊ぶ」).
+### Finale — the token is a key
+
+No new slot anywhere: a visible empty socket would be noticed from the start
+and give the ending away. Instead the token goes back to the left-face NFC
+pad, which the player thinks was used up by the card. The only clue is
+colour: as soon as the token is taken, the pad (dark since the card) starts
+breathing in the token's blue.
+
+Token on the pad → it settles there, its ring turning, the e-ink screen
+prints the token under an open lock → camera turns to the front → the four
+status lights turn blue one by one → from the empty case rises the real
+prize, a clear brilliant-cut stone with coloured fire and glints → ending
+card with only that stone and a replay icon.
 
 ## Technical changes
 
@@ -98,8 +115,9 @@ pulls back to the whole box glowing → ending card (title + 「もう一度遊�
 
 ## Phases
 
-1. Hollow body + hinged lid + interior camera (debug trigger to open). Most
-   risk; check visually on desktop and phone.
-2. Act 1 rework: three stages, corner gear, L1/L1b/L2.
-3. Interior gear train + gem + ending.
-4. L1 left cover + mechanism backs visible inside + polish.
+1. Hollow body + hinged lid + interior camera (debug trigger to open). Done.
+2. Act 1 rework: plinth, body, turret, lid; three rings with auto-judged
+   dials and a "look here" camera. Done (first in yosegi style).
+2b. Modern restyle: maze → NFC → knob → touch keys, walnut/aluminium/glass.
+3. Interior gear train + gem + ending. (done)
+4. Mechanism backs visible inside, blank faces, sound, polish.

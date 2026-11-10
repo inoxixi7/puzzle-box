@@ -7,13 +7,13 @@ export const FINAL_SYMBOL_SEQUENCE = [
   2, // □
 ] as const;
 
-type SealSymbol =
+export type SealSymbol =
   | "triangle"
   | "circle"
   | "square"
   | "diamond";
 
-function createSymbolMesh(
+export function createSymbolMesh(
   type: SealSymbol,
   size: number,
   color: number,
@@ -106,6 +106,9 @@ function createSymbolMesh(
   return mesh;
 }
 
+// Where the key tab sits, counter-clockwise from the top.
+export const PUCK_TAB_ANGLE = Math.PI / 4;
+
 export function createSealMedalGroup(
   scale = 1,
 ) {
@@ -116,19 +119,19 @@ export function createSealMedalGroup(
 
   const bronze =
     new THREE.MeshStandardMaterial({
-      color: 0xb78345,
-      roughness: 0.28,
-      metalness: 0.78,
+      color: 0xaeb3b9,
+      roughness: 0.3,
+      metalness: 1,
     });
 
   const darkBronze =
     new THREE.MeshStandardMaterial({
-      color: 0x5a3a20,
-      roughness: 0.38,
-      metalness: 0.68,
+      color: 0x2c2e31,
+      roughness: 0.5,
+      metalness: 0.3,
     });
 
-  const cream = 0xead3a0;
+  const cream = 0x1c1d20; // engraved, dark on the steel face
 
   const body =
     new THREE.Mesh(
@@ -136,7 +139,7 @@ export function createSealMedalGroup(
         0.39,
         0.39,
         0.085,
-        12,
+        48,
       ),
       bronze,
     );
@@ -162,41 +165,27 @@ export function createSealMedalGroup(
 
   group.add(outerRing);
 
-  // Four mechanical tabs make the seal look like a keyed medallion,
-  // not a plain coin.
-  for (
-    let i = 0;
-    i < 4;
-    i++
-  ) {
-    const angle =
-      (i / 4) *
-      Math.PI *
-      2;
-
-    const tab =
-      new THREE.Mesh(
-        new THREE.BoxGeometry(
-          0.13,
-          0.18,
-          0.07,
-        ),
-        bronze,
-      );
-
-    tab.position.set(
-      Math.sin(angle) *
-        0.39,
-      Math.cos(angle) *
-        0.39,
-      0.04,
+  // One key tab on the rim, between □ and ○: docked, it must point at the
+  // lid's mark. Reading clockwise from it gives the key order ○ △ ◇ □.
+  const tab =
+    new THREE.Mesh(
+      new THREE.BoxGeometry(
+        0.13,
+        0.18,
+        0.07,
+      ),
+      bronze,
     );
 
-    tab.rotation.z =
-      -angle;
+  tab.position.set(
+    -Math.sin(PUCK_TAB_ANGLE) * 0.39,
+    Math.cos(PUCK_TAB_ANGLE) * 0.39,
+    0.04,
+  );
 
-    group.add(tab);
-  }
+  tab.rotation.z = PUCK_TAB_ANGLE;
+
+  group.add(tab);
 
   const centerRing =
     new THREE.Mesh(
@@ -223,7 +212,7 @@ export function createSealMedalGroup(
         24,
       ),
       new THREE.MeshBasicMaterial({
-        color: 0x2a1a11,
+        color: 0x1a1b1d,
       }),
     );
 
@@ -232,32 +221,27 @@ export function createSealMedalGroup(
 
   group.add(centerDot);
 
-  // Final-order clue engraved on the medal:
-  // 1 dot = ○, 2 dots = △, 3 dots = ◇, 4 dots = □.
+  // Symbols clockwise from the tab: ○ △ ◇ □.
   const clues = [
     {
       type: "circle" as const,
       x: 0,
       y: 0.225,
-      dots: 1,
     },
     {
       type: "triangle" as const,
       x: 0.225,
       y: 0,
-      dots: 2,
     },
     {
       type: "diamond" as const,
       x: 0,
       y: -0.225,
-      dots: 3,
     },
     {
       type: "square" as const,
       x: -0.225,
       y: 0,
-      dots: 4,
     },
   ];
 
@@ -265,7 +249,7 @@ export function createSealMedalGroup(
     const symbol =
       createSymbolMesh(
         clue.type,
-        0.055,
+        0.07,
         cream,
       );
 
@@ -274,60 +258,62 @@ export function createSealMedalGroup(
       clue.y,
       0.078,
     );
+    // Upright once docked with the tab on the mark (the puck then sits
+    // turned by -PUCK_TAB_ANGLE); otherwise □ and ◇ would swap looks.
+    symbol.rotation.z += PUCK_TAB_ANGLE;
 
     group.add(symbol);
-
-    // Dots sit between the symbol and the medal center (like the ○ clue),
-    // laid out perpendicular to that direction. Placing them on the outer
-    // side let the raised rim hide them (◇ / □ lost their dots).
-    const distance =
-      Math.hypot(
-        clue.x,
-        clue.y,
-      );
-
-    const inwardX =
-      -clue.x / distance;
-
-    const inwardY =
-      -clue.y / distance;
-
-    const dotSpacing = 0.03;
-    const dotInset = 0.075;
-
-    for (
-      let i = 0;
-      i < clue.dots;
-      i++
-    ) {
-      const dot =
-        new THREE.Mesh(
-          new THREE.CircleGeometry(
-            0.011,
-            18,
-          ),
-          new THREE.MeshBasicMaterial({
-            color: cream,
-          }),
-        );
-
-      const offset =
-        (i - (clue.dots - 1) / 2) *
-        dotSpacing;
-
-      dot.position.set(
-        clue.x +
-          inwardX * dotInset -
-          inwardY * offset,
-        clue.y +
-          inwardY * dotInset +
-          inwardX * offset,
-        0.079,
-      );
-
-      group.add(dot);
-    }
   }
+
+  // Engraved arrow: starts at the tab and runs clockwise through the
+  // symbols, so the order reads ○ → △ → ◇ → □ in any language.
+  const arrowMaterial = new THREE.MeshBasicMaterial({
+    color: cream,
+    side: THREE.DoubleSide,
+  });
+  const arrowRadius = 0.135;
+  // Three.js angles run counter-clockwise from +x; the tab is at 3π/4.
+  const tabTheta = Math.PI / 2 + PUCK_TAB_ANGLE;
+  const startTheta = tabTheta - 0.35;
+  const endTheta = tabTheta - Math.PI * 2 + 0.5;
+
+  const arc = new THREE.Mesh(
+    new THREE.RingGeometry(
+      arrowRadius - 0.012,
+      arrowRadius + 0.012,
+      64,
+      1,
+      endTheta,
+      startTheta - endTheta,
+    ),
+    arrowMaterial,
+  );
+  arc.position.z = 0.078;
+  group.add(arc);
+
+  const tail = new THREE.Mesh(new THREE.CircleGeometry(0.026, 16), arrowMaterial);
+  tail.position.set(
+    Math.cos(startTheta) * arrowRadius,
+    Math.sin(startTheta) * arrowRadius,
+    0.079,
+  );
+  group.add(tail);
+
+  // Head at the clockwise end, pointing along the way round.
+  const head = new THREE.Shape();
+  head.moveTo(0.06, 0);
+  head.lineTo(-0.015, 0.042);
+  head.lineTo(-0.015, -0.042);
+  head.closePath();
+  const headMesh = new THREE.Mesh(new THREE.ShapeGeometry(head), arrowMaterial);
+  headMesh.position.set(
+    Math.cos(endTheta) * arrowRadius,
+    Math.sin(endTheta) * arrowRadius,
+    0.079,
+  );
+  // Clockwise tangent at angle θ points along θ − π/2.
+  headMesh.rotation.z = endTheta - Math.PI / 2;
+  group.add(headMesh);
 
   return group;
 }

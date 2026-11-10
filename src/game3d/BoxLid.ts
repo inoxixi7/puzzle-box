@@ -7,6 +7,8 @@ const SNAP_ANGLE = THREE.MathUtils.degToRad(30);
 // Drag distance per radian: the lid is heavy, so it lags the finger.
 const PX_PER_RADIAN = 320;
 const LIGHT_MAX = 14;
+// Resting angle once unlocked; dropping the lid returns it here, not shut.
+const CRACK_ANGLE = 0.025;
 
 type BoxLidOptions = {
   // Hinge on the back-top edge. Everything that belongs to the lid is its child.
@@ -51,8 +53,16 @@ export class BoxLid {
     return this.opened;
   }
 
+  // The latch lets go: the lid jumps, then rests open a crack with light
+  // showing along the seam.
   public unlock() {
+    if (this.unlocked) return;
     this.unlocked = true;
+
+    gsap
+      .timeline()
+      .to(this, { angle: 0.06, duration: 0.12, ease: "power2.out", onUpdate: () => this.setAngle(this.angle) })
+      .to(this, { angle: CRACK_ANGLE, duration: 0.5, ease: "bounce.out", onUpdate: () => this.setAngle(this.angle) });
   }
 
   public setEnabled(enabled: boolean) {
@@ -94,7 +104,7 @@ export class BoxLid {
     }
 
     gsap.to(this, {
-      angle: 0,
+      angle: CRACK_ANGLE,
       duration: 0.45,
       ease: "bounce.out",
       onUpdate: () => this.setAngle(this.angle),
