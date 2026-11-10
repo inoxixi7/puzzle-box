@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
+import { PALETTE } from "../palette";
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -50,15 +51,12 @@ export function disposeTree(root: THREE.Object3D) {
   root.removeFromParent();
 }
 
-// Glowing amber, the box's one accent colour.
-export const AMBER = 0xffa63a;
-
 export function createLed(geometry: THREE.BufferGeometry) {
   const led = new THREE.Mesh(
     geometry,
     new THREE.MeshStandardMaterial({
       color: 0x2a2724,
-      emissive: AMBER,
+      emissive: PALETTE.amber,
       emissiveIntensity: 0,
       roughness: 0.3,
     }),
@@ -74,17 +72,17 @@ export function setLed(led: THREE.Mesh, intensity: number, duration = 0.25) {
 }
 
 // Small parts make their own materials (disposed with the puzzle).
-export function aluminum(color = 0xc8ccd1) {
+export function aluminum(color: number = PALETTE.aluminumBright) {
   return new THREE.MeshStandardMaterial({ color, metalness: 1, roughness: 0.32 });
 }
 
-export function graphite(color = 0x2a2b2f) {
+export function graphite(color: number = PALETTE.graphiteLight) {
   return new THREE.MeshStandardMaterial({ color, metalness: 0.2, roughness: 0.55 });
 }
 
 export function smokedGlass(opacity = 0.35) {
   return new THREE.MeshStandardMaterial({
-    color: 0x0d0e10,
+    color: PALETTE.smokedGlass,
     metalness: 0.1,
     roughness: 0.04,
     transparent: true,

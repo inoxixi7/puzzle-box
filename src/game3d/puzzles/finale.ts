@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
 import { aluminum } from "./puzzleUtils";
+import { PALETTE } from "../palette";
 
-export const TOKEN_BLUE = 0x4d8dff;
 const TOKEN_RADIUS = 0.42;
 const TOKEN_THICKNESS = 0.08;
 
@@ -19,7 +19,7 @@ export function createToken() {
 
   const glow = new THREE.MeshStandardMaterial({
     color: 0x1d4fd6,
-    emissive: TOKEN_BLUE,
+    emissive: PALETTE.tokenBlue,
     emissiveIntensity: 1.2,
     roughness: 0.3,
     side: THREE.DoubleSide,

@@ -9,7 +9,8 @@ import {
   PUCK_TAB_ANGLE,
   type SealSymbol,
 } from "./SealMedal";
-import { AMBER, aluminum, disposeTree, pickObject, screenCenter } from "./puzzleUtils";
+import { aluminum, disposeTree, pickObject, screenCenter } from "./puzzleUtils";
+import { PALETTE } from "../palette";
 
 type TouchKeysPuzzleOptions = {
   anchor: THREE.Group;
@@ -97,7 +98,7 @@ export class TouchKeysPuzzle {
       // Light through the veneer: invisible until lit.
       (glow.material as THREE.Material).dispose();
       glow.material = new THREE.MeshBasicMaterial({
-        color: AMBER,
+        color: PALETTE.amber,
         transparent: true,
         opacity: 0,
         depthWrite: false,

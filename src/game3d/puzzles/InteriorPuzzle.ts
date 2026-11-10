@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { gsap } from "gsap";
 
 import { createPrizeGem, createToken } from "./finale";
-import { AMBER, aluminum, disposeTree, graphite, pickObject, screenCenter } from "./puzzleUtils";
+import { aluminum, disposeTree, graphite, pickObject, screenCenter } from "./puzzleUtils";
+import { PALETTE, css } from "../palette";
 
 type InteriorPuzzleOptions = {
   // Box-local group; the puzzle uses box coordinates directly.
@@ -194,7 +195,7 @@ export class InteriorPuzzle {
   private prize: THREE.Group;
   private sparkles: THREE.Sprite[];
   private prizeLight = new THREE.PointLight(0xfff4e0, 0, 7, 2);
-  private tokenLight = new THREE.PointLight(0x4d8dff, 0, 6, 2);
+  private tokenLight = new THREE.PointLight(PALETTE.tokenBlue, 0, 6, 2);
   private halo: THREE.Sprite;
   // Larger invisible target: the token itself is small on screen.
   private tokenHit: THREE.Mesh;
@@ -220,7 +221,7 @@ export class InteriorPuzzle {
     const metal = aluminum();
     const dark = graphite();
     const engraving = new THREE.MeshBasicMaterial({ color: 0x1c1d20, side: THREE.DoubleSide });
-    const amber = new THREE.MeshBasicMaterial({ color: AMBER, side: THREE.DoubleSide });
+    const amber = new THREE.MeshBasicMaterial({ color: PALETTE.amber, side: THREE.DoubleSide });
 
     const makeGear = (radius: number, material: THREE.Material): Gear => {
       const spinner = new THREE.Group();
@@ -527,7 +528,7 @@ export class InteriorPuzzle {
     }
     this.held = gear;
     if (gear) {
-      gear.material.emissive.setHex(AMBER);
+      gear.material.emissive.setHex(PALETTE.amber);
       gear.material.emissiveIntensity = 0.35;
       gsap.to(gear.spinner.position, { y: gear.slot.y + 0.12, duration: 0.15 });
     }
@@ -752,7 +753,7 @@ export function createGearClueTexture() {
   canvas.height = 512;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context is unavailable.");
-  ctx.fillStyle = "#3a2416";
+  ctx.fillStyle = css(PALETTE.walnut);
   ctx.fillRect(0, 0, 1024, 512);
   ctx.strokeStyle = "#f4efe6";
   ctx.fillStyle = "#f4efe6";

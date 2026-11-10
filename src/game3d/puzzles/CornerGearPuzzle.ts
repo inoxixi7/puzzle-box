@@ -4,6 +4,7 @@ import { gsap } from "gsap";
 import {
   createSealMedalGroup,
 } from "./SealMedal";
+import { PALETTE } from "../palette";
 
 type CornerGearPuzzleOptions = {
   // Knob position and puck drawer position, both on the right face.
@@ -237,7 +238,7 @@ export class CornerGearPuzzle {
       0.23,
     );
 
-    // Slim brass needle: clearer direction and visually closer to a
+    // Slim aluminium needle: clearer direction and visually closer to a
     // mechanical instrument than the previous thick stem + cone.
     const needleShape =
       new THREE.Shape();
@@ -495,7 +496,7 @@ export class CornerGearPuzzle {
     // 这圈会扩散一次，提示玩家按下中央按钮确认。
     const hintMaterial =
       new THREE.MeshBasicMaterial({
-        color: 0xffa63a,
+        color: PALETTE.amber,
         transparent: true,
         opacity: 0,
         depthWrite: false,
@@ -584,11 +585,11 @@ export class CornerGearPuzzle {
           THREE.MeshStandardMaterial;
 
       material.color.set(
-        0xffb04a,
+        PALETTE.amber,
       );
 
       material.emissive.set(
-        0xffa63a,
+        PALETTE.amber,
       );
 
       material.emissiveIntensity =

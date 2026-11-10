@@ -12,6 +12,9 @@ import {
   useGameStore,
 } from "../../store/useGameStore";
 
+import { TrayIcon } from "../HudIcons";
+import { PALETTE, css } from "../palette";
+
 function ItemIcon({
   item,
 }: {
@@ -21,11 +24,11 @@ function ItemIcon({
     return (
       <svg width="42" height="32" viewBox="0 0 42 32" aria-hidden="true">
         <rect x="4" y="4" width="34" height="24" rx="3" fill="#e9e8e4" />
-        <g fill="none" stroke="#2a2b2f" strokeWidth="2" strokeLinecap="round">
+        <g fill="none" stroke={css(PALETTE.graphiteLight)} strokeWidth="2" strokeLinecap="round">
           <path d="M12 12 A6 6 0 0 1 12 20" />
           <path d="M16 9 A10 10 0 0 1 16 23" />
         </g>
-        <rect x="25" y="8" width="9" height="2" fill="#ffa63a" />
+        <rect x="25" y="8" width="9" height="2" fill={css(PALETTE.amber)} />
       </svg>
     );
   }
@@ -35,7 +38,7 @@ function ItemIcon({
     return (
       <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
         <polygon points="20,2 35.6,11 35.6,29 20,38 4.4,29 4.4,11" fill="#b9bec5" stroke="#e4e7ea" strokeWidth="1" />
-        <circle cx="20" cy="20" r="8" fill="none" stroke="#4d8dff" strokeWidth="3" />
+        <circle cx="20" cy="20" r="8" fill="none" stroke={css(PALETTE.tokenBlue)} strokeWidth="3" />
         <circle cx="20" cy="20" r="4" fill="#1a1c20" />
       </svg>
     );
@@ -179,19 +182,19 @@ export function InventoryBar() {
               "rgba(19, 15, 12, 0.88)",
             border:
               "1px solid rgba(191, 149, 86, 0.46)",
-            fontSize: 13,
-            letterSpacing:
-              "0.02em",
+            fontSize: 20,
+            lineHeight: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
             boxShadow:
               "0 8px 24px rgba(0,0,0,.22)",
           }}
+          role="img"
+          aria-label={`${getInventoryItem(noticeItem).name}を手に入れた`}
         >
-          {
-            getInventoryItem(
-              noticeItem,
-            ).name
-          }
-          を手に入れた
+          <span aria-hidden="true">+</span>
+          <ItemIcon item={noticeItem} />
         </div>
       )}
 
@@ -211,33 +214,14 @@ export function InventoryBar() {
       >
         <div
           className="inventory-header"
+          role="img"
+          aria-label="持ち物"
           style={{
             color:
               "rgba(229, 214, 188, 0.84)",
           }}
         >
-          <span>
-            持ち物
-          </span>
-
-          {selectedItem && (
-            <span
-              style={{
-                marginLeft: 16,
-                color:
-                  "#dfbf84",
-                letterSpacing:
-                  "0.02em",
-              }}
-            >
-              {
-                getInventoryItem(
-                  selectedItem,
-                ).name
-              }
-              を選択中
-            </span>
-          )}
+          <TrayIcon />
         </div>
 
         <div className="inventory-slots">
@@ -345,18 +329,6 @@ export function InventoryBar() {
               );
             },
           )}
-        </div>
-
-        <div
-          className="inventory-footer"
-          style={{
-            color:
-              "rgba(213, 198, 175, 0.58)",
-          }}
-        >
-          {selectedItem
-            ? `${getInventoryItem(selectedItem).name}を使用する場所を選ぶ`
-            : "道具を選んで使用する"}
         </div>
       </div>
     </div>

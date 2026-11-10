@@ -11,6 +11,7 @@ import {
   setLed,
   smokedGlass,
 } from "./puzzleUtils";
+import { PALETTE, css } from "../palette";
 
 type BallMazePuzzleOptions = {
   anchor: THREE.Group;
@@ -275,7 +276,7 @@ export class BallMazePuzzle {
     ctx.fillStyle = "#ecebe7";
     ctx.fillRect(0, 0, 320, 200);
     // Contactless waves.
-    ctx.strokeStyle = "#2a2b2f";
+    ctx.strokeStyle = css(PALETTE.graphiteLight);
     ctx.lineWidth = 7;
     ctx.lineCap = "round";
     for (let i = 0; i < 3; i++) {
@@ -283,7 +284,7 @@ export class BallMazePuzzle {
       ctx.arc(70, 100, 24 + i * 22, -Math.PI / 4, Math.PI / 4);
       ctx.stroke();
     }
-    ctx.fillStyle = "#ffa63a";
+    ctx.fillStyle = css(PALETTE.amber);
     ctx.fillRect(200, 40, 80, 8);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;

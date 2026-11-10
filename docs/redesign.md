@@ -37,10 +37,9 @@ each one needs a small translation (dial drawings → knob, the puck's arrow
 
 No puzzle here — the top face was the last lock. Act 2 is the release beat.
 
-1. **Lift.** Focus the top: hint 「蓋を持ち上げる」. The lid follows the drag
-   with resistance; released below ~30° it drops back with a thud. Past
-   30° it swings to ~105° on its own, bounces once, and a brass lid stay
-   unfolds to hold it.
+1. **Lift.** Focus the top. The lid follows the drag with resistance;
+   released below ~30° it drops back with a thud. Past 30° it swings to
+   ~105° on its own and bounces once.
 2. **Light.** A light inside the box ramps up as the lid opens, spilling
    through the gap before the interior is visible.
 3. **Reveal.** Camera moves on its own over the box and looks in (~60° down),
@@ -104,7 +103,7 @@ card with only that stone and a replay icon.
 
 1. Body: solid `BoxGeometry` → hollow shell (4 walls + bottom + false floor)
    and a separate lid group pivoting on the back-top edge. The top anchor and
-   top brass trim move into the lid group.
+   top trim move into the lid group.
 2. Focus: `BoxFaceFocusController` only knows six faces; add an `inside`
    focus target with its own camera pose.
 3. Linkages L1/L2 wired in `PuzzleBox3D` between puzzle classes.

@@ -17,28 +17,17 @@ import {
 } from "./inventory/InventoryBar";
 
 import {
+  BackIcon,
+  LandscapeIcon,
+  SpinDiskIcon,
+  TapFaceIcon,
+  TurnBoxIcon,
+} from "./HudIcons";
+
+import {
   useGameStore,
 } from "../store/useGameStore";
-
-const FACE_NAMES: Record<
-  FocusTarget,
-  string
-> = {
-  inside: "箱の中",
-  front: "正面",
-  right: "右側",
-  back: "背面",
-  left: "左側",
-  top: "上面",
-  bottom: "底面",
-};
-
-// Phones and tablets: say "タップ" instead of "クリック".
-const IS_TOUCH_DEVICE =
-  typeof window !== "undefined" &&
-  window.matchMedia(
-    "(pointer: coarse)",
-  ).matches;
+import { PALETTE, css } from "./palette";
 
 export function Game3DCanvas() {
   const hostRef =
@@ -161,8 +150,7 @@ export function Game3DCanvas() {
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        background:
-          "#0b0d10",
+        background: css(PALETTE.night),
         userSelect: "none",
         // Stop pinch-zoom / page scrolling from stealing touch drags.
         touchAction: "none",
@@ -183,41 +171,39 @@ export function Game3DCanvas() {
               "1px solid rgba(183, 145, 88, 0.28)",
           }}
         >
-          {IS_TOUCH_DEVICE
-            ? "ドラッグして箱を回す・面をタップして調べる"
-            : "ドラッグして箱を回す・面をクリックして調べる"}
+          <span className="hud-icons" role="img" aria-label="ドラッグで箱を回す・面をタップして調べる">
+            <TurnBoxIcon />
+            <TapFaceIcon />
+          </span>
 
-          <span className="hud-sub-hint">
-            横向きにすると遊びやすくなります
+          <span className="hud-sub-hint" role="img" aria-label="横向きにすると遊びやすくなります">
+            <LandscapeIcon />
           </span>
         </div>
       )}
 
       {focusedFace && (
         <>
-          <div
-            className="hud-top-label has-button"
-            data-hud="top"
-            style={{
-              color:
-                "rgba(232, 220, 198, 0.88)",
-              background:
-                "rgba(14, 12, 10, 0.58)",
-              border:
-                "1px solid rgba(183, 145, 88, 0.32)",
-            }}
-          >
-            {
-              FACE_NAMES[
-                focusedFace
-              ]
-            }
-            を調べています
-            {focusedFace ===
-              "front" &&
-              !frontSolved &&
-              "・円盤をドラッグして回す"}
-          </div>
+          {focusedFace === "front" && !frontSolved && (
+            <div
+              className="hud-top-label has-button"
+              data-hud="top"
+              role="img"
+              aria-label="円盤をドラッグして回す"
+              style={{
+                color:
+                  "rgba(232, 220, 198, 0.88)",
+                background:
+                  "rgba(14, 12, 10, 0.58)",
+                border:
+                  "1px solid rgba(183, 145, 88, 0.32)",
+              }}
+            >
+              <span className="hud-icons">
+                <SpinDiskIcon />
+              </span>
+            </div>
+          )}
 
           <button
             type="button"
@@ -227,6 +213,7 @@ export function Game3DCanvas() {
             }}
             className="hud-back-button"
             data-hud="top"
+            aria-label="観察に戻る"
             style={{
               border:
                 "1px solid rgba(183, 145, 88, 0.48)",
@@ -236,7 +223,7 @@ export function Game3DCanvas() {
                 "#e7d3ad",
             }}
           >
-            観察に戻る
+            <BackIcon />
           </button>
         </>
       )}

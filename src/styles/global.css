@@ -11,7 +11,7 @@
   }
   
   body {
-    background: #11100e;
+    background: #0b0d10;
     color: #f5f2ea;
     font-family:
       Inter,
@@ -65,8 +65,8 @@
   }
 
   .hud-top-label.has-button {
-    /* Leave room for the 観察に戻る button on the right. */
-    max-width: calc(100% - 168px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    /* Leave room for the back button on the right. */
+    max-width: calc(100% - 104px - env(safe-area-inset-left) - env(safe-area-inset-right));
   }
 
   .hud-back-button {
@@ -74,11 +74,19 @@
     right: calc(20px + env(safe-area-inset-right));
     top: calc(18px + env(safe-area-inset-top));
     z-index: 20;
-    min-width: 108px;
+    min-width: 52px;
     min-height: 44px;
+    display: grid;
+    place-items: center;
     border-radius: 9px;
     cursor: pointer;
     font-size: 13px;
+  }
+
+  .hud-icons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
   }
 
   .hud-sub-hint {
@@ -136,13 +144,6 @@
     max-height: 78%;
   }
 
-  .inventory-footer {
-    height: 18px;
-    margin-top: 6px;
-    text-align: right;
-    font-size: 11px;
-  }
-
   /* --------------------------------------------------
      Phone, portrait: full-width bar along the bottom.
      -------------------------------------------------- */
@@ -156,20 +157,19 @@
     }
 
     .hud-top-label.has-button {
-      max-width: calc(100% - 136px);
+      max-width: calc(100% - 84px);
     }
 
     .hud-back-button {
       right: calc(12px + env(safe-area-inset-right));
       top: calc(12px + env(safe-area-inset-top));
-      min-width: 96px;
-      font-size: 12px;
+      min-width: 48px;
     }
 
     .hud-sub-hint {
       display: block;
+      margin-top: 6px;
       opacity: 0.7;
-      font-size: 11px;
     }
 
     .inventory-root {
@@ -200,10 +200,6 @@
       max-height: 56px;
       aspect-ratio: 1;
     }
-
-    .inventory-footer {
-      display: none;
-    }
   }
 
   /* --------------------------------------------------
@@ -221,9 +217,8 @@
     .hud-back-button {
       right: calc(12px + env(safe-area-inset-right));
       top: calc(10px + env(safe-area-inset-top));
-      min-width: 96px;
+      min-width: 48px;
       min-height: 40px;
-      font-size: 12px;
     }
 
     .inventory-root {
@@ -235,8 +230,7 @@
       padding: 6px;
     }
 
-    .inventory-header,
-    .inventory-footer {
+    .inventory-header {
       display: none;
     }
 

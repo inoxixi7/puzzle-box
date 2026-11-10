@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
 
-import { AMBER, aluminum, disposeTree, pickObject, smokedGlass } from "./puzzleUtils";
+import { aluminum, disposeTree, pickObject, smokedGlass } from "./puzzleUtils";
+import { PALETTE } from "../palette";
 
 type LightsMatrixPuzzleOptions = {
   anchor: THREE.Group;
@@ -82,7 +83,7 @@ export class LightsMatrixPuzzle {
 
       const glow = new THREE.Mesh(
         new THREE.PlaneGeometry(KEY * 0.78, KEY * 0.78),
-        new THREE.MeshBasicMaterial({ color: AMBER, transparent: true, opacity: 0, depthWrite: false }),
+        new THREE.MeshBasicMaterial({ color: PALETTE.amber, transparent: true, opacity: 0, depthWrite: false }),
       );
       glow.position.set(x, y, 0.087);
       this.root.add(glow);

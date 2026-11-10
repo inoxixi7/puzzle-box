@@ -26,6 +26,7 @@ import { InteriorPuzzle, createGearClueTexture } from "./puzzles/InteriorPuzzle"
 import { TouchKeysPuzzle } from "./puzzles/TouchKeysPuzzle";
 import { createLed, setLed } from "./puzzles/puzzleUtils";
 import type { InventoryItemId } from "./inventory/items";
+import { PALETTE } from "./palette";
 
 // Phones / tablets get lighter rendering settings.
 const IS_TOUCH_DEVICE =
@@ -154,7 +155,7 @@ export class PuzzleBox3D {
   // Progress lights on the base: off until the maze powers the box.
   private statusLeds: THREE.Mesh[] = [];
   private delayedCalls: gsap.core.Tween[] = [];
-  private insideLight = new THREE.PointLight(0xffc98a, 0, 7, 2);
+  private insideLight = new THREE.PointLight(PALETTE.amberLight, 0, 7, 2);
   private insidePickMesh: THREE.Mesh;
   private lid: BoxLid;
 
@@ -318,7 +319,7 @@ export class PuzzleBox3D {
         this.statusLeds.forEach((led, i) => {
           this.delayedCalls.push(
             gsap.delayedCall(2 + 0.35 * i, () => {
-              (led.material as THREE.MeshStandardMaterial).emissive.set(0x4d8dff);
+              (led.material as THREE.MeshStandardMaterial).emissive.set(PALETTE.tokenBlue);
               setLed(led, 2.6, 0.2);
             }),
           );

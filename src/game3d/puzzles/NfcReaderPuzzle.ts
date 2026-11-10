@@ -21,7 +21,8 @@ import {
   setLed,
   smokedGlass,
 } from "./puzzleUtils";
-import { TOKEN_BLUE, createToken } from "./finale";
+import { createToken } from "./finale";
+import { PALETTE } from "../palette";
 
 type NfcReaderPuzzleOptions = {
   anchor: THREE.Group;
@@ -165,7 +166,7 @@ export class NfcReaderPuzzle {
       new THREE.PlaneGeometry(0.5, 0.5),
       new THREE.MeshStandardMaterial({
         color: 0x000000,
-        emissive: 0xffa63a,
+        emissive: PALETTE.amber,
         emissiveMap: texture,
         emissiveIntensity: 0,
         alphaMap: texture,
@@ -296,7 +297,7 @@ export class NfcReaderPuzzle {
   public tokenReleased() {
     this.wantsToken = true;
     for (const led of [this.padRing, this.padIcon]) {
-      (led.material as THREE.MeshStandardMaterial).emissive.set(TOKEN_BLUE);
+      (led.material as THREE.MeshStandardMaterial).emissive.set(PALETTE.tokenBlue);
     }
     setLed(this.padIcon, 0.6, 0.6);
     this.breathing = gsap.fromTo(
