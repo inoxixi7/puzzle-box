@@ -1,21 +1,14 @@
 # Puzzle Box
 
-[中文](README.md) | 日本語
+[English](README.md) | [中文](README.zh.md) | 日本語
 
-ブラウザで遊べる 3D の仕掛け箱パズルゲームです。
+ブラウザで遊べる 3D の仕掛け箱パズルゲームです。どの面にも仕掛けがあり、面どうしが連動し、ふたは本当に開き、エンディングは箱の中にあります。
+箱には文字が一切なく、手がかりはすべて絵なので、どの言語の人でも同じように遊べます。
 
-## すぐに遊ぶ（インストール不要）
-
-- Web 版：https://inoxixi7.github.io/puzzle-box-repaired/
-- オフライン版（1 ファイル）：https://inoxixi7.github.io/puzzle-box-repaired/puzzle-box-offline.html
-  右クリック →「名前を付けてリンク先を保存」でダウンロードし、ダブルクリックして Chrome / Edge で開くだけで遊べます。
-
-## ZIP をダウンロードして自分の PC で動かす
-
-### 1. 必要なもの
+## 必要なもの
 
 - [Node.js](https://nodejs.org/ja) 22 以上（LTS 版を推奨。npm も一緒にインストールされます）
-- Chrome / Edge などの最新ブラウザ
+- Chrome・Edge・Safari・Firefox などの最新ブラウザ
 
 インストール後、ターミナル（Windows は PowerShell）で次のコマンドを実行し、バージョンが表示されれば OK です。
 
@@ -24,25 +17,27 @@ node -v
 npm -v
 ```
 
-### 2. ZIP をダウンロードして解凍する
+## コードを入手する
 
-1. https://github.com/inoxixi7/puzzle-box-repaired を開く
-2. 緑色の「Code」ボタン →「Download ZIP」をクリック
-3. ダウンロードした `puzzle-box-repaired-main.zip` を右クリック →「すべて展開」（Mac はダブルクリック）
-4. 展開された `puzzle-box-repaired-main` フォルダの中に `package.json` があることを確認
+**ZIP でダウンロード**
 
-Git を使う場合は ZIP の代わりに次のコマンドでも取得できます。
+1. https://github.com/inoxixi7/puzzle-box を開く
+2. 緑色の **Code** ボタン → **Download ZIP** をクリック
+3. 展開する（Windows は右クリック →「すべて展開」、Mac はダブルクリック）
+4. 展開された `puzzle-box-main` フォルダの中に `package.json` があることを確認
+
+**Git を使う場合**
 
 ```bash
-git clone https://github.com/inoxixi7/puzzle-box-repaired.git
+git clone https://github.com/inoxixi7/puzzle-box.git
 ```
 
-### 3. 依存パッケージをインストールする
+## インストール
 
-ターミナルで解凍したフォルダに移動し、インストールします。
+ターミナルでフォルダに移動し、依存パッケージをインストールします。
 
 ```bash
-cd puzzle-box-repaired-main
+cd puzzle-box-main    # git clone した場合は cd puzzle-box
 npm ci
 ```
 
@@ -53,7 +48,7 @@ npm ci
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 > ```
 
-### 4. 起動する
+## 起動する
 
 ```bash
 npm run dev
@@ -62,7 +57,7 @@ npm run dev
 ターミナルに表示される URL（通常は http://localhost:5173/ ）をブラウザで開くと遊べます。
 終了するときはターミナルで `Ctrl + C` を押します。
 
-## ビルド（配布用ファイルを作る）
+## ビルド
 
 ```bash
 npm run build          # dist/ に出力。Web サーバーに置いて公開する用
@@ -73,11 +68,9 @@ npm run build:single   # dist-single/index.html に 1 ファイルで出力。�
 `dist/index.html` はダブルクリックでは動きません（Web サーバーが必要です）。
 サーバーなしで配りたい場合は `npm run build:single` で作ったファイルを使ってください。
 
-`main` ブランチにプッシュすると、GitHub Actions が自動でビルドして上記の Web 版を更新します（`.github/workflows/deploy-pages.yml`）。
-
 ## 遊び方
 
 - ドラッグで箱を回転
 - 面をクリック（タップ）するとその面を調べる
-- 手に入れた道具は画面右下の「持ち物」から選んで使う
-- 「観察に戻る」ボタンまたは Esc キーで全体表示に戻る
+- 手に入れた道具は画面右下の「持ち物」に入るので、選んでから使う場所をタップ
+- 戻るボタンまたは Esc キーで全体表示に戻る

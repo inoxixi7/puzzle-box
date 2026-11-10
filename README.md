@@ -1,38 +1,83 @@
 # Puzzle Box
 
-中文 | [日本語](README.ja.md)
+English | [中文](README.zh.md) | [日本語](README.ja.md)
 
-## 开发环境
+A 3D puzzle box you play in the browser. Every face hides a mechanism, the
+faces affect each other, the lid really opens, and the ending is inside.
+There are no words on the box: every clue is a picture, so it plays the
+same in any language.
 
-- Node.js 22 或兼容的较新 LTS 版本
-- npm
+## Requirements
 
-## 安装依赖与运行
+- [Node.js](https://nodejs.org/) 22 or newer (the LTS version is
+  recommended; npm comes with it)
+- A recent browser such as Chrome, Edge, Safari or Firefox
+
+To check the install, run these in a terminal (PowerShell on Windows). Both
+should print a version number.
 
 ```bash
+node -v
+npm -v
+```
+
+## Get the code
+
+**ZIP download**
+
+1. Open https://github.com/inoxixi7/puzzle-box
+2. Click the green **Code** button → **Download ZIP**
+3. Unzip it (Windows: right-click → **Extract All**; Mac: double-click)
+4. The folder `puzzle-box-main` should contain `package.json`
+
+**Or with Git**
+
+```bash
+git clone https://github.com/inoxixi7/puzzle-box.git
+```
+
+## Install
+
+In a terminal, go to the folder and install the dependencies:
+
+```bash
+cd puzzle-box-main    # or "cd puzzle-box" if you used git clone
 npm ci
+```
+
+> **Windows: "running scripts is disabled on this system"**
+> Run this in PowerShell, then run `npm ci` again. It only applies to the
+> current PowerShell window.
+>
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+> ```
+
+## Run
+
+```bash
 npm run dev
 ```
 
-## 在线试玩
+Open the URL shown in the terminal (usually http://localhost:5173/) in your
+browser. Press `Ctrl + C` in the terminal to stop.
 
-- 网页版：https://inoxixi7.github.io/puzzle-box-repaired/
-- 离线单文件版：https://inoxixi7.github.io/puzzle-box-repaired/puzzle-box-offline.html
-  （右键“另存为”下载后，双击用 Chrome / Edge 打开即可，无需安装任何东西）
-
-推送到 `main` 后，GitHub Actions 会自动构建并更新上面的网站（`.github/workflows/deploy-pages.yml`）。
-
-## 构建网页版本
+## Build
 
 ```bash
-npm run build          # 输出到 dist/，需要放到网页服务器上
-npm run build:single   # 输出 dist-single/index.html，单个文件，可直接双击打开
+npm run build          # writes dist/, for hosting on a web server
+npm run preview        # serves the build locally at http://localhost:4173/
+npm run build:single   # writes dist-single/index.html: one file, opens with a double-click
 ```
 
-## 本次修复
+`dist/index.html` does not work when opened by double-click; it needs a web
+server. To share the game without a server, use the file from
+`npm run build:single`.
 
-- 将 Three.js `Vector3.scale.set(单个数值)` 改为 `scale.setScalar(数值)`，以符合 Three.js 类型定义并保留等比例缩放效果。
-- 移除 `RightPuzzleFive` 中只赋值、未读取的 `solved` 字段，解决 TypeScript 未使用字段错误。
-- 关闭应用层 TypeScript 的 `strictNullChecks`，以兼容现有代码中基于父容器和可选动画目标的写法。此项只影响静态类型检查，不会自动增加运行时空值保护。
+## How to play
 
-注意：源码 TypeScript 检查已通过。当前打包环境中的 Vite/Rolldown 原生可选依赖不完整，因此未能在此环境完成 Vite 生产构建；请在依赖安装完整的环境运行 `npm ci` 后再执行 `npm run build`。
+- Drag to turn the box
+- Click (tap) a face to look at it closely
+- Items you find go to the inventory at the bottom right; select one, then
+  tap where to use it
+- The back button or the Esc key returns to the whole box
