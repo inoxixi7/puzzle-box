@@ -78,6 +78,8 @@ server. To share the game without a server, use the file from
 
 - Drag to turn the box
 - Click (tap) a face to look at it closely
-- Items you find go to the inventory at the bottom right; select one, then
+- The game has no text; the corner icons show what you can do
+- Items you find go to the tray at the bottom right; select one, then
   tap where to use it
-- The back button or the Esc key returns to the whole box
+- The back-arrow button (top right) or the Esc key returns to the whole box
+- Stuck? The light-bulb button turns the box to the face to work on next

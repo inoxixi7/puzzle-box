@@ -12,6 +12,7 @@ import {
   smokedGlass,
 } from "./puzzleUtils";
 import { PALETTE, css } from "../palette";
+import { clunk, tick } from "../sound";
 
 type BallMazePuzzleOptions = {
   anchor: THREE.Group;
@@ -336,6 +337,7 @@ export class BallMazePuzzle {
   // Down the trap, along the channel, and back up at the start.
   private fallThroughTrap() {
     this.rolling = true;
+    clunk();
     const start = cellPosition(...START);
     gsap
       .timeline()
@@ -359,6 +361,7 @@ export class BallMazePuzzle {
       .to(this.ball.position, { z: FLOOR_Z - 0.02, duration: 0.18, ease: "power2.in" })
       .to(this.ball.scale, { x: 0.85, y: 0.85, z: 0.85, duration: 0.1 }, "<")
       .call(() => {
+        clunk();
         setLed(this.holeLed, 2.4, 0.15);
         this.options.onPowered?.();
       });
@@ -378,6 +381,7 @@ export class BallMazePuzzle {
 
   private pickUpCard() {
     this.cardAvailable = false;
+    tick();
     gsap
       .timeline()
       .to(this.card.position, { y: 1.1, z: 0.4, duration: 0.35, ease: "power2.out" })

@@ -170,26 +170,7 @@ export function InventoryBar() {
           key={
             acquisitionSerial
           }
-          style={{
-            animation:
-              "inventory-notice 1.5s ease both",
-            padding:
-              "7px 11px",
-            borderRadius: 8,
-            color:
-              "#e8dbc2",
-            background:
-              "rgba(19, 15, 12, 0.88)",
-            border:
-              "1px solid rgba(191, 149, 86, 0.46)",
-            fontSize: 20,
-            lineHeight: 1,
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            boxShadow:
-              "0 8px 24px rgba(0,0,0,.22)",
-          }}
+          className="inventory-notice"
           role="img"
           aria-label={`${getInventoryItem(noticeItem).name}を手に入れた`}
         >
@@ -201,25 +182,11 @@ export function InventoryBar() {
       <div
         className="inventory-panel"
         data-hud="inventory"
-        style={{
-          background:
-            "rgba(14, 12, 10, 0.78)",
-          border:
-            "1px solid rgba(177, 135, 76, 0.32)",
-          backdropFilter:
-            "blur(8px)",
-          boxShadow:
-            "0 10px 28px rgba(0,0,0,.22)",
-        }}
       >
         <div
           className="inventory-header"
           role="img"
           aria-label="持ち物"
-          style={{
-            color:
-              "rgba(229, 214, 188, 0.84)",
-          }}
         >
           <TrayIcon />
         </div>
@@ -271,31 +238,8 @@ export function InventoryBar() {
                       ?.name
                   }
                   className="inventory-slot"
+                  data-selected={selected || undefined}
                   style={{
-                    border:
-                      selected
-                        ? "2px solid #d8ac68"
-                        : "1px solid rgba(150, 116, 72, 0.42)",
-                    background:
-                      selected
-                        ? "rgba(122, 85, 42, 0.42)"
-                        : item
-                          ? "rgba(37, 29, 22, 0.94)"
-                          : "rgba(19, 17, 15, 0.72)",
-                    boxShadow:
-                      selected
-                        ? "inset 0 0 0 2px rgba(229,191,126,.13), 0 0 14px rgba(194,144,76,.22)"
-                        : "inset 0 0 0 1px rgba(255,255,255,.025)",
-                    cursor:
-                      item
-                        ? "pointer"
-                        : "default",
-                    opacity:
-                      item
-                        ? 1
-                        : 0.62,
-                    outline:
-                      "none",
                     animation:
                       justAdded &&
                       acquisitionSerial >
@@ -312,17 +256,7 @@ export function InventoryBar() {
                     />
                   )}
 
-                  <span
-                    style={{
-                      position:
-                        "absolute",
-                      left: 5,
-                      top: 3,
-                      color:
-                        "rgba(210, 187, 150, 0.42)",
-                      fontSize: 9,
-                    }}
-                  >
+                  <span className="inventory-slot-number">
                     {index + 1}
                   </span>
                 </button>

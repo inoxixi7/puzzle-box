@@ -11,6 +11,7 @@ import {
 } from "./SealMedal";
 import { aluminum, disposeTree, pickObject, screenCenter } from "./puzzleUtils";
 import { PALETTE } from "../palette";
+import { clunk, tick } from "../sound";
 
 type TouchKeysPuzzleOptions = {
   anchor: THREE.Group;
@@ -128,6 +129,7 @@ export class TouchKeysPuzzle {
   }
 
   private dockPuck() {
+    clunk();
     this.puck.visible = true;
     this.puck.rotation.z = PUCK_START_ROTATION;
     gsap
@@ -148,6 +150,7 @@ export class TouchKeysPuzzle {
   private checkAlignment() {
     if (Math.abs(this.tabOffset()) > ALIGN_TOLERANCE) return;
     this.awake = true;
+    tick();
     gsap.to(this.puck.rotation, { z: this.puck.rotation.z - this.tabOffset(), duration: 0.12 });
     this.keys.forEach((key, i) =>
       gsap.delayedCall(0.3 + 0.12 * i, () => this.setGlow(key, KEY_IDLE, 0.4)),
@@ -163,6 +166,7 @@ export class TouchKeysPuzzle {
   // guessing key by key gives nothing away.
   private press(key: (typeof this.keys)[number]) {
     if (this.judging) return;
+    tick();
     this.entry.push(key.id);
     this.setGlow(key, KEY_LIT, 0.08);
     if (this.entry.length < FINAL_SYMBOL_SEQUENCE.length) return;

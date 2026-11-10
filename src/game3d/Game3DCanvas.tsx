@@ -18,6 +18,7 @@ import {
 
 import {
   BackIcon,
+  HintIcon,
   LandscapeIcon,
   SpinDiskIcon,
   TapFaceIcon,
@@ -160,16 +161,6 @@ export function Game3DCanvas() {
         <div
           className="hud-top-label"
           data-hud="top"
-          style={{
-            color:
-              "rgba(232, 220, 198, 0.82)",
-            letterSpacing:
-              "0.04em",
-            background:
-              "rgba(14, 12, 10, 0.48)",
-            border:
-              "1px solid rgba(183, 145, 88, 0.28)",
-          }}
         >
           <span className="hud-icons" role="img" aria-label="ドラッグで箱を回す・面をタップして調べる">
             <TurnBoxIcon />
@@ -182,6 +173,21 @@ export function Game3DCanvas() {
         </div>
       )}
 
+      {!finalSolved && (
+        <button
+          type="button"
+          onClick={() => {
+            gameRef.current
+              ?.hint();
+          }}
+          className={`hud-hint-button${focusedFace ? " beside-back" : ""}`}
+          data-hud="top"
+          aria-label="ヒント"
+        >
+          <HintIcon />
+        </button>
+      )}
+
       {focusedFace && (
         <>
           {focusedFace === "front" && !frontSolved && (
@@ -190,14 +196,6 @@ export function Game3DCanvas() {
               data-hud="top"
               role="img"
               aria-label="円盤をドラッグして回す"
-              style={{
-                color:
-                  "rgba(232, 220, 198, 0.88)",
-                background:
-                  "rgba(14, 12, 10, 0.58)",
-                border:
-                  "1px solid rgba(183, 145, 88, 0.32)",
-              }}
             >
               <span className="hud-icons">
                 <SpinDiskIcon />
@@ -214,14 +212,6 @@ export function Game3DCanvas() {
             className="hud-back-button"
             data-hud="top"
             aria-label="観察に戻る"
-            style={{
-              border:
-                "1px solid rgba(183, 145, 88, 0.48)",
-              background:
-                "rgba(24, 18, 13, 0.84)",
-              color:
-                "#e7d3ad",
-            }}
           >
             <BackIcon />
           </button>

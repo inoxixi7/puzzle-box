@@ -4,6 +4,7 @@ import { gsap } from "gsap";
 import { createPrizeGem, createToken } from "./finale";
 import { aluminum, disposeTree, graphite, pickObject, screenCenter } from "./puzzleUtils";
 import { PALETTE, css } from "../palette";
+import { chime, clunk, shimmer, tick } from "../sound";
 
 type InteriorPuzzleOptions = {
   // Box-local group; the puzzle uses box coordinates directly.
@@ -152,7 +153,8 @@ function arcArrow(radius: number, start: number, sweep: number, material: THREE.
   return group;
 }
 
-type Gear = { spinner: THREE.Group; body: THREE.Mesh };
+// `hit`: solid disc over the whole gear, so the axle hole still takes a tap.
+type Gear = { spinner: THREE.Group; body: THREE.Mesh; hit: THREE.Mesh };
 type Loose = Gear & {
   size: Size;
   material: THREE.MeshStandardMaterial;
@@ -223,13 +225,16 @@ export class InteriorPuzzle {
     const engraving = new THREE.MeshBasicMaterial({ color: 0x1c1d20, side: THREE.DoubleSide });
     const amber = new THREE.MeshBasicMaterial({ color: PALETTE.amber, side: THREE.DoubleSide });
 
+    const hitMaterial = new THREE.MeshBasicMaterial({ visible: false });
     const makeGear = (radius: number, material: THREE.Material): Gear => {
       const spinner = new THREE.Group();
       const body = new THREE.Mesh(gearGeometry(radius), material);
       body.castShadow = true;
       body.receiveShadow = true;
-      spinner.add(body);
-      return { spinner, body };
+      const hit = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.06, radius + 0.06, GEAR_THICKNESS, 24), hitMaterial);
+      hit.position.y = GEAR_THICKNESS / 2;
+      spinner.add(body, hit);
+      return { spinner, body, hit };
     };
     const topArrow = (gear: THREE.Group, radius: number, start: number, sweep: number, material: THREE.Material) => {
       const arrow = arcArrow(radius, start, sweep, material);
@@ -453,6 +458,7 @@ export class InteriorPuzzle {
     if (!chain) {
       if (!this.jammed) {
         this.jammed = true;
+        clunk();
         this.shake(this.fixed.D.spinner, 0.04);
       }
       return;
@@ -469,7 +475,10 @@ export class InteriorPuzzle {
         stopped = id;
       }
     }
-    if (stopped && !this.atStop) this.shake(this.fixed[stopped].spinner, 0.05);
+    if (stopped && !this.atStop) {
+      clunk();
+      this.shake(this.fixed[stopped].spinner, 0.05);
+    }
     this.atStop = stopped !== null;
 
     for (const [key, sense] of chain) {
@@ -564,16 +573,19 @@ export class InteriorPuzzle {
       this.loose.some((o) => o !== gear && o.peg !== null && contact(at, r, PEGS[o.peg], SIZE[o.size]) === -1);
     if (clash) {
       // Will not go in: it is too big for the gap.
+      clunk();
       this.shake(gear.spinner, 0.15);
       return;
     }
     gear.material.emissiveIntensity = 0;
     this.held = null;
+    tick();
     this.move(gear, peg);
   }
 
   private solve() {
     this.solved = true;
+    chime();
     this.dragId = null;
     this.canvas.style.cursor = "default";
     gsap
@@ -623,6 +635,7 @@ export class InteriorPuzzle {
   // Up and away into the inventory; its light leaves with it.
   private takeToken() {
     this.tokenReady = false;
+    shimmer();
     this.canvas.style.cursor = "default";
     this.tokenHover.forEach((t) => t.kill());
     gsap
@@ -641,7 +654,7 @@ export class InteriorPuzzle {
   }
 
   private looseAt(event: PointerEvent) {
-    return this.loose.find((g) => !g.moving && this.hits(g.body, event));
+    return this.loose.find((g) => !g.moving && this.hits(g.hit, event));
   }
 
   private freePegAt(event: PointerEvent) {
@@ -661,7 +674,7 @@ export class InteriorPuzzle {
       return;
     }
     if (!this.enabled || this.solved || this.dragId !== null) return;
-    if (this.hits(this.fixed.D.body, event)) {
+    if (this.hits(this.fixed.D.hit, event)) {
       this.dragId = event.pointerId;
       this.lastAngle = this.pointerAngle(event);
       this.jammed = false;
@@ -695,7 +708,7 @@ export class InteriorPuzzle {
       return;
     }
     const over =
-      this.hits(this.fixed.D.body, event) ||
+      this.hits(this.fixed.D.hit, event) ||
       this.looseAt(event) !== undefined ||
       (this.held !== null && this.freePegAt(event) >= 0);
     this.canvas.style.cursor = over ? "pointer" : "default";

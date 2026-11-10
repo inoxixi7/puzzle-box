@@ -3,6 +3,7 @@ import { gsap } from "gsap";
 
 import { aluminum, disposeTree, pickObject, smokedGlass } from "./puzzleUtils";
 import { PALETTE } from "../palette";
+import { tick } from "../sound";
 
 type LightsMatrixPuzzleOptions = {
   anchor: THREE.Group;
@@ -142,6 +143,7 @@ export class LightsMatrixPuzzle {
 
   private press(index: number) {
     const { cap } = this.keys[index];
+    tick();
     gsap.fromTo(cap.position, { z: 0.04 }, { z: 0.06, duration: 0.15 });
     this.flip(index);
     for (const n of this.neighbours(index)) this.show(n);

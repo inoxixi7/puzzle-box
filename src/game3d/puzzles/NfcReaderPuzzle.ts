@@ -23,6 +23,7 @@ import {
 } from "./puzzleUtils";
 import { createToken } from "./finale";
 import { PALETTE } from "../palette";
+import { chime, tick } from "../sound";
 
 type NfcReaderPuzzleOptions = {
   anchor: THREE.Group;
@@ -281,6 +282,7 @@ export class NfcReaderPuzzle {
       .timeline()
       .fromTo(this.card.position, { z: 1.4 }, { z: 0.2, duration: 0.45, ease: "power2.out" })
       .call(() => {
+        tick();
         setLed(this.padRing, 2.6, 0.1);
         this.refreshScreen("log");
       })
@@ -315,6 +317,7 @@ export class NfcReaderPuzzle {
       .timeline()
       .fromTo(this.token.position, { z: 1.4 }, { z: 0.2, duration: 0.6, ease: "power2.out" })
       .call(() => {
+        chime();
         setLed(this.padRing, 2.6, 0.1);
         setLed(this.padIcon, 0, 0.4);
         this.refreshScreen("token");
@@ -326,6 +329,7 @@ export class NfcReaderPuzzle {
 
   // Tapped without the card: the ring blinks to say "something goes here".
   private nudge() {
+    tick();
     gsap.fromTo(
       this.padIcon.material as THREE.MeshStandardMaterial,
       { emissiveIntensity: 2 },

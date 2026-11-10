@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
+import { clunk } from "./sound";
 
 const OPEN_ANGLE = THREE.MathUtils.degToRad(105);
 // Released past this, the lid swings open on its own; below it, it drops back.
@@ -58,6 +59,7 @@ export class BoxLid {
   public unlock() {
     if (this.unlocked) return;
     this.unlocked = true;
+    clunk();
 
     gsap
       .timeline()
@@ -108,6 +110,8 @@ export class BoxLid {
       duration: 0.45,
       ease: "bounce.out",
       onUpdate: () => this.setAngle(this.angle),
+      // Thud as it drops back.
+      onComplete: clunk,
     });
   };
 

@@ -5,6 +5,7 @@ import {
   createSealMedalGroup,
 } from "./SealMedal";
 import { PALETTE } from "../palette";
+import { clunk, tick } from "../sound";
 
 type CornerGearPuzzleOptions = {
   // Knob position and puck drawer position, both on the right face.
@@ -148,6 +149,7 @@ export class CornerGearPuzzle {
 
   // Jammed: it only gives a little before the pin stops it.
   private wiggleJammedGear() {
+    clunk();
     const start = this.dialGroup.rotation.z;
     const state = { r: start };
     const update = () => this.setDialRotation(state.r);
@@ -930,7 +932,10 @@ export class CornerGearPuzzle {
       duration: 0.18,
       ease: "back.out(1.5)",
       onUpdate: () => this.setDialRotation(state.r),
-      onComplete: () => this.confirmDirection(),
+      onComplete: () => {
+        tick();
+        this.confirmDirection();
+      },
     });
 
     this.canvas.style.cursor = "grab";

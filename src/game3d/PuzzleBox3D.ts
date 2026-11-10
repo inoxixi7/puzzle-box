@@ -23,10 +23,12 @@ import { NfcReaderPuzzle } from "./puzzles/NfcReaderPuzzle";
 import { LightsMatrixPuzzle } from "./puzzles/LightsMatrixPuzzle";
 import { CornerGearPuzzle } from "./puzzles/CornerGearPuzzle";
 import { InteriorPuzzle, createGearClueTexture } from "./puzzles/InteriorPuzzle";
+import { drawPips, drawToken } from "./puzzles/einkIcons";
 import { TouchKeysPuzzle } from "./puzzles/TouchKeysPuzzle";
 import { createLed, setLed } from "./puzzles/puzzleUtils";
 import type { InventoryItemId } from "./inventory/items";
 import { PALETTE } from "./palette";
+import { chime, shimmer } from "./sound";
 
 // Phones / tablets get lighter rendering settings.
 const IS_TOUCH_DEVICE =
@@ -82,7 +84,9 @@ const TOP_VIEW = new THREE.Quaternion().setFromEuler(
 );
 
 // shortcut: `?lid` unlocks the lid from the start (for testing Acts 2–3).
+// Dev server only, so the published game cannot be skipped.
 const DEBUG_LID =
+  import.meta.env.DEV &&
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).has("lid");
 
@@ -158,6 +162,8 @@ export class PuzzleBox3D {
   private insideLight = new THREE.PointLight(PALETTE.amberLight, 0, 7, 2);
   private insidePickMesh: THREE.Mesh;
   private lid: BoxLid;
+  // The face the player should work on next, for the hint button.
+  private hintFace: FocusTarget = "front";
 
   private resizeObserver: ResizeObserver;
   private animationFrame = 0;
@@ -279,10 +285,12 @@ export class PuzzleBox3D {
         this.matrixPuzzle.powerOn();
         this.nfcPuzzle.powerOn(this.matrixPuzzle.pattern());
         options.onMazeSolved?.();
+        this.hintFace = "back";
         // The e-ink screen says what the box wants next.
         this.presentLater(LEFT_VIEW, 1.6);
       },
       onCardPickedUp: () => {
+        this.hintFace = "left";
         options.onCardPickedUp?.();
         this.presentLater(LEFT_VIEW, 0.5);
       },
@@ -298,6 +306,7 @@ export class PuzzleBox3D {
         this.lightStatus(1);
         this.mazePuzzle.releaseCard();
         this.nfcPuzzle.cardReleased();
+        this.hintFace = "front";
         this.presentLater(FRONT_VIEW, 0.4);
       },
     });
@@ -314,7 +323,10 @@ export class PuzzleBox3D {
         // the prize rises out of the open box, then the ending card.
         this.delayedCalls.push(
           gsap.delayedCall(1.2, () => this.focusController.exitFocus(FRONT_VIEW)),
-          gsap.delayedCall(3.4, () => this.interiorPuzzle.revealPrize()),
+          gsap.delayedCall(3.4, () => {
+            shimmer();
+            this.interiorPuzzle.revealPrize();
+          }),
         );
         this.statusLeds.forEach((led, i) => {
           this.delayedCalls.push(
@@ -330,6 +342,7 @@ export class PuzzleBox3D {
         this.lightStatus(2);
         this.cornerGearPuzzle.freeGear();
         options.onNfcSolved?.();
+        this.hintFace = "right";
         // Leave time to read the log first.
         this.presentLater(RIGHT_VIEW, 2.6);
       },
@@ -350,6 +363,7 @@ export class PuzzleBox3D {
       },
       onMedalPickedUp: () => {
         options.onPuckPickedUp?.();
+        this.hintFace = "top";
         this.presentLater(TOP_VIEW, 0.5);
       },
     });
@@ -389,6 +403,7 @@ export class PuzzleBox3D {
       onTokenTaken: () => {
         options.onTokenPickedUp?.();
         this.nfcPuzzle.tokenReleased();
+        this.hintFace = "left";
         // Back to the whole box; where the token goes is for the player to find.
         this.delayedCalls.push(gsap.delayedCall(0.8, () => this.focusController.exitFocus()));
       },
@@ -403,6 +418,7 @@ export class PuzzleBox3D {
         this.focusMeshes.delete("top");
         this.boxRoot.add(this.insidePickMesh);
         this.focusMeshes.set("inside", this.insidePickMesh);
+        this.hintFace = "inside";
         this.focusController.focus("inside");
       },
     });
@@ -425,7 +441,7 @@ export class PuzzleBox3D {
         // The open lid stands up behind the box; lower the box to keep both in frame.
         getBoxOffset: (face) => {
           // The open lid stands up behind the box; lower the box to keep both in frame.
-          if (face === "inside") return new THREE.Vector3(0, -1.7, 0);
+          if (face === "inside") return new THREE.Vector3(0, this.isWideScreen() ? -1.5 : -1.7, 0);
           if (!face && this.lid.isOpen) return new THREE.Vector3(0, -1.2, 0);
           return new THREE.Vector3();
         },
@@ -771,6 +787,21 @@ export class PuzzleBox3D {
     plinth.receiveShadow = true;
     this.boxRoot.add(plinth);
 
+    // Underneath: a stamped maker's mark for whoever turns the box over.
+    const markSize = Math.min(plinthWidth, plinthDepth) * 0.55;
+    const mark = new THREE.Mesh(
+      new THREE.PlaneGeometry(markSize, markSize),
+      new THREE.MeshStandardMaterial({
+        map: createMakersMarkTexture(),
+        transparent: true,
+        metalness: 0.6,
+        roughness: 0.55,
+      }),
+    );
+    mark.rotation.x = Math.PI / 2;
+    mark.position.y = plinth.position.y - PLINTH_HEIGHT / 2 - 0.003;
+    this.boxRoot.add(mark);
+
     // Four status lights, one per ring, on the front of the base.
     for (let i = 0; i < 4; i++) {
       const led = createLed(new THREE.CircleGeometry(0.075, 24));
@@ -781,6 +812,7 @@ export class PuzzleBox3D {
   }
 
   private lightStatus(index: number) {
+    chime();
     setLed(this.statusLeds[index], 2.2, 0.4);
   }
 
@@ -1001,6 +1033,11 @@ export class PuzzleBox3D {
 
   // Distance at which an object of the given size fits into the
   // free (non-HUD) part of the screen.
+  // Phone in landscape: short and wide.
+  private isWideScreen() {
+    return this.viewportHeight < 600 && this.viewportWidth / Math.max(1, this.viewportHeight) > 1.6;
+  }
+
   private getFitDistance(
     objectWidth: number,
     objectHeight: number,
@@ -1065,12 +1102,14 @@ export class PuzzleBox3D {
 
     if (face === "inside") {
       // Open box seen from 60° above, with the lid standing up behind it.
+      // On short wide screens (phone landscape) the top of the lid, above
+      // the rack, is let go so the gears stay big enough to tap.
       return Math.max(
         FOCUS_CAMERA_Z,
         this.dimensions.height / 2 +
           this.getFitDistance(
             this.dimensions.width * 1.12,
-            11.5,
+            this.isWideScreen() ? 7 : 11.5,
           ),
       );
     }
@@ -1168,6 +1207,11 @@ export class PuzzleBox3D {
     this.focusController.focus(
       face,
     );
+  }
+
+  // Optional hint: look straight at the face that matters now.
+  public hint() {
+    this.focusController.focus(this.hintFace);
   }
 
   public exitFocus() {
@@ -1310,4 +1354,26 @@ export class PuzzleBox3D {
       );
     }
   }
+}
+
+// Four rings, then the key: the whole box in one stamp.
+function createMakersMarkTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D context is unavailable.");
+  ctx.strokeStyle = ctx.fillStyle = "rgba(28, 29, 32, 0.8)";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.arc(128, 128, 118, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(128, 128, 106, 0, Math.PI * 2);
+  ctx.stroke();
+  drawPips(ctx, 128, 72, 4);
+  drawToken(ctx, 128, 148, 44);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
 }

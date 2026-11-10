@@ -18,5 +18,16 @@ export default defineConfig(({ mode }) => ({
   build:
     mode === 'singlefile'
       ? { outDir: 'dist-single', copyPublicDir: false }
-      : {},
+      : {
+          // Three.js in its own chunk, cached across game updates. It is
+          // ~590 kB on its own, so the warning limit allows for it.
+          chunkSizeWarningLimit: 650,
+          rolldownOptions: {
+            output: {
+              codeSplitting: {
+                groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }],
+              },
+            },
+          },
+        },
 }))

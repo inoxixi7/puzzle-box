@@ -73,6 +73,16 @@ export function BackIcon() {
   );
 }
 
+// Hint: a light bulb.
+export function HintIcon() {
+  return (
+    <Icon size={24}>
+      <path d="M9 17 a6.5 6.5 0 1 1 6 0 V19 H9 Z" />
+      <path d="M10 21.5 H14" />
+    </Icon>
+  );
+}
+
 // The inventory: an open tray.
 export function TrayIcon() {
   return (
