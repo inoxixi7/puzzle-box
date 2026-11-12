@@ -40,27 +40,67 @@ function seededRandom(seed: number) {
   };
 }
 
-// Straight-grained walnut: long soft streaks, a few darker lines.
+// Straight-grained walnut, drawn in grey: broad growth bands, fine grain
+// lines and short dark pores, then laid over the wood colour.
 function createWalnutTexture(base: string, seed: number) {
   const random = seededRandom(seed);
-  const { canvas, ctx } = createCanvas(512, 512);
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, 512, 512);
+  const size = 1024;
+  const { canvas: grey, ctx } = createCanvas(size, size);
+  ctx.fillStyle = "#808080";
+  ctx.fillRect(0, 0, size, size);
 
-  for (let i = 0; i < 260; i++) {
-    const y = random() * 512;
-    const dark = random() < 0.6;
-    ctx.strokeStyle = dark
-      ? `rgba(20, 10, 4, ${0.02 + random() * 0.06})`
-      : `rgba(255, 220, 180, ${0.01 + random() * 0.025})`;
-    ctx.lineWidth = 0.5 + random() * 1.6;
+  const streak = (y: number, width: number, style: string) => {
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
     ctx.beginPath();
-    ctx.moveTo(0, y);
-    // Gentle drift so the grain is not ruler-straight.
-    ctx.bezierCurveTo(170, y + random() * 8 - 4, 340, y + random() * 8 - 4, 512, y);
+    ctx.moveTo(-8, y);
+    // Gentle drift so the grain is not ruler-straight; ends meet for tiling.
+    ctx.bezierCurveTo(size / 3, y + random() * 14 - 7, (size * 2) / 3, y + random() * 14 - 7, size + 8, y);
     ctx.stroke();
+  };
+
+  // Growth bands: wide, soft, a few of them.
+  for (let i = 0; i < 26; i++) {
+    const dark = random() < 0.55;
+    streak(
+      random() * size,
+      14 + random() * 46,
+      dark ? `rgba(0, 0, 0, ${0.05 + random() * 0.09})` : `rgba(255, 255, 255, ${0.04 + random() * 0.07})`,
+    );
   }
-  return toTexture(canvas);
+  // Grain lines.
+  for (let i = 0; i < 520; i++) {
+    const dark = random() < 0.65;
+    streak(
+      random() * size,
+      0.6 + random() * 2.2,
+      dark ? `rgba(0, 0, 0, ${0.05 + random() * 0.16})` : `rgba(255, 255, 255, ${0.03 + random() * 0.08})`,
+    );
+  }
+  // Pores: short dark dashes along the grain.
+  for (let i = 0; i < 2600; i++) {
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.12 + random() * 0.25})`;
+    ctx.fillRect(random() * size, random() * size, 5 + random() * 22, 0.8 + random() * 0.8);
+  }
+
+  // Colour: the grey drawing laid over the wood colour.
+  const { canvas: colour, ctx: tint } = createCanvas(size, size);
+  tint.fillStyle = base;
+  tint.fillRect(0, 0, size, size);
+  tint.globalCompositeOperation = "overlay";
+  tint.drawImage(grey, 0, 0);
+
+  return toTexture(colour);
+}
+
+function createWoodMaterial(base: string, seed: number) {
+  // Oiled finish: a soft sheen rather than dry, matt wood.
+  return new THREE.MeshStandardMaterial({
+    map: createWalnutTexture(base, seed),
+    roughness: 0.62,
+    envMapIntensity: 0.45,
+    metalness: 0,
+  });
 }
 
 // Fine brushing along one axis, used as a roughness map.
@@ -79,19 +119,8 @@ function createBrushedTexture() {
 
 export function createBoxMaterials(): BoxMaterials {
   return {
-    wood: new THREE.MeshStandardMaterial({
-      map: createWalnutTexture(css(PALETTE.walnut), 1),
-      roughness: 0.9,
-      envMapIntensity: 0.35,
-      metalness: 0,
-    }),
-
-    panel: new THREE.MeshStandardMaterial({
-      map: createWalnutTexture(css(PALETTE.walnutPanel), 2),
-      roughness: 0.9,
-      envMapIntensity: 0.35,
-      metalness: 0,
-    }),
+    wood: createWoodMaterial(css(PALETTE.walnut), 1),
+    panel: createWoodMaterial(css(PALETTE.walnutPanel), 2),
 
     aluminum: new THREE.MeshStandardMaterial({
       color: PALETTE.aluminum,

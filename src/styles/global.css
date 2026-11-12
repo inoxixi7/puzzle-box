@@ -122,6 +122,33 @@
   }
 
   /* Second slot from the right: left of the back or hint button. */
+  /* Ending: the only control left on screen, in the token's blue. */
+  .ending-replay {
+    position: absolute;
+    left: 50%;
+    bottom: calc(44px + env(safe-area-inset-bottom));
+    z-index: 100;
+    width: 64px;
+    height: 64px;
+    margin-left: -32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #ffffff;
+    border: 1px solid rgba(115, 170, 244, 0.72);
+    background: rgba(41, 91, 161, 0.72);
+    box-shadow: 0 8px 22px rgba(18, 63, 132, 0.34), 0 0 40px rgba(77, 141, 255, 0.28);
+    animation: ending-replay-in 1.2s ease-out both;
+  }
+
+  @keyframes ending-replay-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+
   .hud-icon-button.slot-2 {
     right: calc(20px + 52px + 8px + env(safe-area-inset-right));
   }

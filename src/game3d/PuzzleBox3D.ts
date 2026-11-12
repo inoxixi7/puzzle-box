@@ -14,6 +14,7 @@ import {
   type BoxMaterials,
 } from "./BoxMaterials";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 
 import { BoxRotationController } from "./BoxRotationController";
 import { BoxFaceFocusController } from "./BoxFaceFocusController";
@@ -58,6 +59,8 @@ const INPUT_RENDER_MS = 250;
 // Shell thickness of the now hollow box.
 const WALL = 0.35;
 const LID_THICKNESS = 0.3;
+// Eased edges on the wood and the base, so they catch a line of light.
+const EDGE_RADIUS = 0.045;
 // False floor inside, above the front drawer.
 const FALSE_FLOOR_Y = -0.55;
 
@@ -89,6 +92,19 @@ const DEBUG_LID =
   import.meta.env.DEV &&
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).has("lid");
+
+function createShadowPoolTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const fade = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  fade.addColorStop(0, "rgba(0, 0, 0, 0.62)");
+  fade.addColorStop(0.45, "rgba(0, 0, 0, 0.34)");
+  fade.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(canvas);
+}
 
 // Saved progress: how many steps of STAGES are done.
 const SAVE_KEY = "puzzle-box:stage";
@@ -696,9 +712,10 @@ export class PuzzleBox3D {
 
     const ground =
       new THREE.Mesh(
+        // Wide enough that its edge is lost in the fog (no horizon line).
         new THREE.PlaneGeometry(
-          30,
-          30,
+          120,
+          120,
         ),
         new THREE.MeshStandardMaterial({
           color: 0x1c1b1d,
@@ -711,9 +728,22 @@ export class PuzzleBox3D {
       -Math.PI / 2;
 
     ground.position.y = -5.1;
-    ground.receiveShadow = true;
 
     this.scene.add(ground);
+
+    // The box hangs well above the table, so its shadow is a soft pool
+    // rather than a hard outline (the cast shadows stay on the box itself).
+    const pool = new THREE.Mesh(
+      new THREE.PlaneGeometry(17, 15),
+      new THREE.MeshBasicMaterial({
+        map: createShadowPoolTexture(),
+        transparent: true,
+        depthWrite: false,
+      }),
+    );
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.set(-0.4, -5.09, -0.6);
+    this.scene.add(pool);
   }
 
   private createPuzzleBox() {
@@ -735,7 +765,9 @@ export class PuzzleBox3D {
       position: [number, number, number],
     ) => {
       const slab = new THREE.Mesh(
-        new THREE.BoxGeometry(...size),
+        material === wood
+          ? new RoundedBoxGeometry(...size, 2, EDGE_RADIUS)
+          : new THREE.BoxGeometry(...size),
         material,
       );
       slab.position.set(...position);
@@ -865,7 +897,7 @@ export class PuzzleBox3D {
     const plinthDepth = depth - PLINTH_INSET * 2;
 
     const plinth = new THREE.Mesh(
-      new THREE.BoxGeometry(plinthWidth, PLINTH_HEIGHT, plinthDepth),
+      new RoundedBoxGeometry(plinthWidth, PLINTH_HEIGHT, plinthDepth, 2, EDGE_RADIUS),
       this.materials.aluminum,
     );
     plinth.position.y = -height / 2 - PLINTH_HEIGHT / 2;

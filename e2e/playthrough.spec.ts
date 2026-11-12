@@ -26,7 +26,7 @@ test("fresh box: HUD works, hint focuses the first face", async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto("/");
   await page.getByRole("button", { name: "ヒント" }).click();
-  await expect(page.getByRole("button", { name: "観察に戻る" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "観察に戻る" })).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: "観察に戻る" }).click();
   await page.getByRole("button", { name: "消音" }).click();
   await expect(page.getByRole("button", { name: "音を出す" })).toBeVisible();

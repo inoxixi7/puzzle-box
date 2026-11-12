@@ -238,108 +238,32 @@ export function Game3DCanvas() {
         </>
       )}
 
+      {/* The ending is the stone itself, turning over the open box: nothing
+          covers it, only a replay arrow fades in underneath. */}
       {finalSolved && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 100,
-            display: "grid",
-            placeItems: "center",
-            padding: 24,
-            background:
-              "rgba(5, 8, 14, 0.68)",
-            backdropFilter:
-              "blur(8px)",
-            pointerEvents: "auto",
+        <button
+          type="button"
+          className="ending-replay"
+          aria-label="もう一度遊ぶ"
+          onClick={() => {
+            window.location.reload();
           }}
         >
-          <div
-            style={{
-              width:
-                "min(300px, calc(100vw - 40px))",
-              padding:
-                "38px 34px 32px",
-              borderRadius: 18,
-              textAlign: "center",
-              color: "#eef5ff",
-              background:
-                "linear-gradient(180deg, rgba(18, 29, 48, 0.96), rgba(9, 15, 27, 0.96))",
-              border:
-                "1px solid rgba(89, 151, 238, 0.58)",
-              boxShadow:
-                "0 24px 70px rgba(0, 0, 0, 0.52), 0 0 48px rgba(45, 117, 224, 0.22)",
-            }}
+          <svg
+            viewBox="0 0 24 24"
+            width="30"
+            height="30"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
           >
-            {/* No words: the gem, and a replay arrow. */}
-            <svg
-              viewBox="0 0 120 140"
-              width="120"
-              height="140"
-              aria-hidden="true"
-              style={{
-                display: "block",
-                margin: "0 auto 28px",
-                filter:
-                  "drop-shadow(0 0 22px rgba(220, 235, 255, 0.6))",
-              }}
-            >
-              {/* Brilliant cut seen from the side: table, crown, pavilion. */}
-              <polygon points="38,28 82,28 112,56 60,132 8,56" fill="#e8f1ff" />
-              <polygon points="38,28 82,28 72,56 48,56" fill="#ffffff" />
-              <polygon points="38,28 48,56 8,56" fill="#c9dcff" />
-              <polygon points="82,28 112,56 72,56" fill="#dfe9ff" />
-              <polygon points="8,56 48,56 60,132" fill="#b4ccf5" />
-              <polygon points="48,56 72,56 60,132" fill="#f4f8ff" />
-              <polygon points="72,56 112,56 60,132" fill="#9fbdf0" />
-              <g fill="none" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1.2">
-                <polyline points="38,28 82,28 112,56 60,132 8,56 38,28" />
-                <line x1="8" y1="56" x2="112" y2="56" />
-              </g>
-              {/* Glints. */}
-              <path d="M94 14 L96 22 L104 24 L96 26 L94 34 L92 26 L84 24 L92 22 Z" fill="#ffffff" />
-              <path d="M26 86 L27.5 91 L32 92.5 L27.5 94 L26 99 L24.5 94 L20 92.5 L24.5 91 Z" fill="#ffffff" />
-            </svg>
-
-            <button
-              type="button"
-              aria-label="もう一度遊ぶ"
-              onClick={() => {
-                window.location.reload();
-              }}
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: "50%",
-                border:
-                  "1px solid rgba(115, 170, 244, 0.72)",
-                background:
-                  "rgba(41, 91, 161, 0.72)",
-                color: "#ffffff",
-                cursor: "pointer",
-                display: "inline-grid",
-                placeItems: "center",
-                boxShadow:
-                  "0 8px 22px rgba(18, 63, 132, 0.34)",
-              }}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="30"
-                height="30"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-                <path d="M20 4v5h-5" />
-              </svg>
-            </button>
-          </div>
-        </div>
+            <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+            <path d="M20 4v5h-5" />
+          </svg>
+        </button>
       )}
 
       <InventoryBar />
